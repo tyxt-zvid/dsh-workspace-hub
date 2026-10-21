@@ -52,5 +52,13 @@
         "@deepseek-ai/dsh-client-locale"
       ]
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tyxt-zvid/dsh-workspace-hub.git"
+  },
+  "homepage": "https://github.com/tyxt-zvid/dsh-workspace-hub#readme",
+  "bugs": {
+    "url": "https://github.com/tyxt-zvid/dsh-workspace-hub/issues"
   }
 }
