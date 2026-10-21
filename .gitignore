@@ -1,0 +1,36 @@
+# DSH workspace-local state (task board, sub-chat rows, hub context, lock files)
+.dsh/
+
+# Developer scratch: extracted harness sources, internal research notes,
+# unrelated local plugins in this workspace
+.tools/
+.research/
+.grok-bot/
+
+# Build artifacts and packaged tarballs
+dist/
+*.tgz
+*.tar.gz
+
+# Dependencies
+node_modules/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local logs and environment
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.env
+.env.*
+
+# Local instruction overlays (per-user, not part of the project)
+AGENTS.local.md
+CLAUDE.local.md

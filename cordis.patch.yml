@@ -1,0 +1,4 @@
+# Inserts the Workspace Hub plugin: Host services + agent tools, and its Web panel.
+- insert:
+    - id: workspace-hub
+      name: '@local/dsh-workspace-hub'
