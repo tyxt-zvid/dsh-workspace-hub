@@ -3,6 +3,8 @@
 给 **每个工作区** 一块跨会话共享的任务板、一个工作区会话总览，以及由主对话管理的子会话；同时查看/编辑该工作区的规则、上下文与技能。DSH（DeepSeek Harness）标准 bundle：Host 服务 + Agent 工具 + Web 面板。
 
 > GitHub: <https://github.com/tyxt-zvid/dsh-workspace-hub> · 完整安装、首次使用与 FAQ 见 [GUIDE.md](GUIDE.md)。
+>
+> 市场：在 DSH 的 **Plugins → Discover → Add index source** 添加 `https://raw.githubusercontent.com/tyxt-zvid/zvid-plugins/main/index.json`，即可从 **ZVID Plugins** 市场安装。
 
 ## 功能一览
 

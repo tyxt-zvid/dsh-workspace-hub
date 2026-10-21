@@ -15,6 +15,12 @@ Workspace Hub（工作区中枢）是 DeepSeek Harness 的一个插件包：它�
 
 ## 2. 安装
 
+### 0. 通过 ZVID 市场安装（最方便）
+
+1. 打开 **Plugins → Discover**，点 **Add index source**；
+2. 添加市场索引：`https://raw.githubusercontent.com/tyxt-zvid/zvid-plugins/main/index.json`；
+3. 在市场下拉选择 **ZVID Plugins / ZVID 插件市场**，找到 **Workspace Hub**，点 **Install**。
+
 插件是一个标准 DSH bundle（`package.json` 里声明了 `dsh.bundle.patch` 与 `dsh.client`），三种方式任选：
 
 ### A. 在 DSH 会话里让 Agent 安装（Desktop 最方便）
