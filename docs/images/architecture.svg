@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-label="Workspace Hub architecture: sidebar entry, global hub panel with all-workspaces home and per-workspace console, backed by hub.overview and hub.snapshot">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7aaaff"/>
+    </marker>
+    <marker id="arrowDim" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#61666b"/>
+    </marker>
+    <style>
+      .bg { fill: #151517; }
+      .panel { fill: #232324; stroke: #ffffff1f; stroke-width: 1; }
+      .sub { fill: #2c2c2e; stroke: #ffffff14; stroke-width: 1; }
+      .chip { fill: #2c2c2e; stroke: #ffffff1f; stroke-width: 1; }
+      .t { fill: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .s { fill: #cfd3d6; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .m { fill: #adb2b8; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .mono { fill: #adb2b8; font-family: "SF Mono", Menlo, Consolas, monospace; }
+      .blue { fill: #7aaaff; }
+      .green { fill: #22c55e; }
+      .line { stroke: #7aaaff; stroke-width: 1.5; fill: none; }
+      .lineDim { stroke: #61666b; stroke-width: 1.5; fill: none; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="620" rx="16"/>
+  <text class="t" x="36" y="46" font-size="18" font-weight="600">Workspace Hub · 顶层中枢</text>
+  <text class="m" x="36" y="70" font-size="12">入口在侧边栏；一个全局面板；工作区是中枢内部的一个维度</text>
+
+  <!-- sidebar -->
+  <rect class="panel" x="36" y="96" width="212" height="396" rx="12"/>
+  <text class="m" x="56" y="126" font-size="11" letter-spacing="0.06em">侧边栏</text>
+  <rect x="52" y="142" width="180" height="32" rx="8" fill="#2c2c2e" stroke="#ffffff1f"/>
+  <rect x="52" y="142" width="3" height="32" rx="1.5" fill="#7aaaff"/>
+  <circle cx="70" cy="158" r="5" fill="#7aaaff"/>
+  <text class="t" x="84" y="163" font-size="13" font-weight="600">工作区中枢</text>
+  <text class="m" x="66" y="204" font-size="12">工作区 A</text>
+  <text class="m" x="66" y="230" font-size="12">工作区 B</text>
+  <text class="m" x="66" y="256" font-size="12">工作区 C</text>
+  <line class="lineDim" x1="56" y1="278" x2="228" y2="278"/>
+  <text class="m" x="66" y="302" font-size="12">会话</text>
+  <text class="m" x="66" y="328" font-size="12">插件 / 设置</text>
+  <text class="m" x="56" y="452" font-size="11">常驻入口 · 与会话列表平级</text>
+
+  <!-- arrow sidebar -> main -->
+  <line class="line" x1="256" y1="294" x2="296" y2="294" marker-end="url(#arrow)"/>
+
+  <!-- main global panel -->
+  <rect class="panel" x="304" y="96" width="500" height="396" rx="12"/>
+  <text class="m" x="326" y="126" font-size="11" letter-spacing="0.06em">中枢面板 · main（全局唯一）</text>
+
+  <!-- all workspaces home -->
+  <rect class="sub" x="322" y="140" width="464" height="150" rx="10"/>
+  <text class="t" x="340" y="166" font-size="13" font-weight="600">所有工作区（首页）</text>
+  <text class="m" x="340" y="185" font-size="11">跨区注意力 · 正在运行 · 工作区卡片</text>
+  <rect class="chip" x="338" y="200" width="136" height="46" rx="8"/>
+  <text class="s" x="350" y="219" font-size="11">需要你处理</text>
+  <text class="m" x="350" y="234" font-size="10">阻塞 / 卡住 / 待确认</text>
+  <rect class="chip" x="486" y="200" width="136" height="46" rx="8"/>
+  <text class="s" x="498" y="219" font-size="11">正在运行</text>
+  <text class="m" x="498" y="234" font-size="10">任务 + 执行会话</text>
+  <rect class="chip" x="634" y="200" width="136" height="46" rx="8"/>
+  <text class="s" x="646" y="219" font-size="11">工作区卡片</text>
+  <text class="m" x="646" y="234" font-size="10">任务 / 会话 / 环境</text>
+  <text class="m" x="340" y="272" font-size="11">全局状态条：工作区 4 · 进行中 5 · 待办 9 · 阻塞 2 · 环境 3/7</text>
+
+  <!-- drill-in arrow -->
+  <line class="line" x1="554" y1="300" x2="554" y2="330" marker-end="url(#arrow)"/>
+  <text class="m" x="568" y="320" font-size="11">点卡片 / 注意力项 → drill-in</text>
+
+  <!-- workspace console -->
+  <rect class="sub" x="322" y="342" width="464" height="126" rx="10"/>
+  <text class="m" x="340" y="366" font-size="11">← 所有工作区 / dsh-plugins</text>
+  <text class="t" x="340" y="390" font-size="13" font-weight="600">工作区 Console</text>
+  <rect class="chip" x="340" y="404" width="74" height="30" rx="7"/>
+  <text class="s" x="358" y="423" font-size="11">概览</text>
+  <rect class="chip" x="422" y="404" width="74" height="30" rx="7"/>
+  <text class="s" x="440" y="423" font-size="11">任务</text>
+  <rect class="chip" x="504" y="404" width="74" height="30" rx="7"/>
+  <text class="s" x="522" y="423" font-size="11">对话</text>
+  <rect class="chip" x="586" y="404" width="74" height="30" rx="7"/>
+  <text class="s" x="604" y="423" font-size="11">设置 ⚙</text>
+  <text class="m" x="340" y="456" font-size="11">工作区切换器 · ⌘K · 面包屑返回 All</text>
+
+  <!-- host column -->
+  <rect class="panel" x="828" y="96" width="336" height="396" rx="12"/>
+  <text class="m" x="850" y="126" font-size="11" letter-spacing="0.06em">Host · 数据接口</text>
+
+  <rect class="sub" x="848" y="142" width="296" height="62" rx="8"/>
+  <text class="mono" x="864" y="165" font-size="12" fill="#7aaaff">hub.overview</text>
+  <text class="m" x="864" y="185" font-size="11">全部工作区：任务板 / 会话 / 服务器</text>
+  <text class="m" x="864" y="199" font-size="10">无健康探测 · 4s 轮询</text>
+
+  <rect class="sub" x="848" y="218" width="296" height="62" rx="8"/>
+  <text class="mono" x="864" y="241" font-size="12" fill="#7aaaff">hub.snapshot</text>
+  <text class="m" x="864" y="261" font-size="11">单工作区：板 / 会话 / 环境（含探测）</text>
+  <text class="m" x="864" y="275" font-size="10">进入工作区后才轮询</text>
+
+  <rect class="sub" x="848" y="294" width="296" height="62" rx="8"/>
+  <text class="mono" x="864" y="317" font-size="12" fill="#7aaaff">hub.workspace</text>
+  <text class="m" x="864" y="337" font-size="11">规则链 / 上下文 / 技能 / projectRoot</text>
+  <text class="m" x="864" y="351" font-size="10">设置页按工作区读写</text>
+
+  <rect class="sub" x="848" y="370" width="296" height="62" rx="8"/>
+  <text class="mono" x="864" y="393" font-size="12" fill="#7aaaff">tasks.* · subchats.* · servers.*</text>
+  <text class="m" x="864" y="413" font-size="11">行级乐观更新 / CAS / 撤销 / 派发</text>
+  <text class="m" x="864" y="427" font-size="10">同源认证 JSON 路由</text>
+
+  <!-- data arrows -->
+  <line class="line" x1="844" y1="173" x2="792" y2="173" marker-end="url(#arrow)"/>
+  <line class="line" x1="844" y1="360" x2="792" y2="360" marker-end="url(#arrow)"/>
+
+  <!-- footer legend -->
+  <circle cx="40" cy="528" r="4" fill="#7aaaff"/>
+  <text class="m" x="54" y="532" font-size="11">默认落点：所有工作区</text>
+  <circle cx="250" cy="528" r="4" fill="#7aaaff"/>
+  <text class="m" x="264" y="532" font-size="11">标题栏「中枢」= 打开并定位当前工作区</text>
+  <circle cx="600" cy="528" r="4" fill="#22c55e"/>
+  <text class="m" x="614" y="532" font-size="11">g a / 面包屑 = 返回所有工作区</text>
+  <text class="m" x="36" y="568" font-size="11">任务板、子会话、环境仍按工作区隔离存储；中枢只做统一入口与跨区聚合。</text>
+</svg>

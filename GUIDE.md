@@ -30,7 +30,7 @@ Workspace Hub（工作区中枢）是 DeepSeek Harness 的一个插件包：它�
 ```js
 plugin_manager({
   action: 'install_bundle',
-  target: '/绝对路径/dsh-workspace-hub-0.2.0.tgz'
+  target: '/绝对路径/dsh-workspace-hub-0.2.1.tgz'
 })
 ```
 
@@ -39,7 +39,7 @@ plugin_manager({
 ### B. 用 CLI 安装
 
 ```bash
-dsh plugin --profile desktop add /绝对路径/dsh-workspace-hub-0.2.0.tgz
+dsh plugin --profile desktop add /绝对路径/dsh-workspace-hub-0.2.1.tgz
 # 或 npm：dsh plugin --profile desktop add @your-scope/dsh-workspace-hub
 # 或 git：dsh plugin --profile desktop add https://github.com/you/dsh-workspace-hub
 ```
@@ -146,7 +146,7 @@ dsh plugin --profile desktop add ./dsh-plugins
 npm pack --pack-destination dist
 
 # 对方安装
-plugin_manager({ action:'install_bundle', target:'/abs/path/dist/local-dsh-workspace-hub-0.2.0.tgz' })
+plugin_manager({ action:'install_bundle', target:'/abs/path/dist/local-dsh-workspace-hub-0.2.1.tgz' })
 ```
 
 发布到 npm（让别人用名字安装）：

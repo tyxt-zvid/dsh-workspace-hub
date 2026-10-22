@@ -1,10 +1,31 @@
 # Workspace Hub
 
-给 **每个工作区** 一块跨会话共享的任务板、一个工作区会话总览，以及由主对话管理的子会话；同时查看/编辑该工作区的规则、上下文与技能。DSH（DeepSeek Harness）标准 bundle：Host 服务 + Agent 工具 + Web 面板。
+给 DSH 一个**顶层工作区中枢**：跨工作区总览 + 每个工作区的共享任务板、会话/子会话、开发服务器状态与规则/上下文/技能。DSH（DeepSeek Harness）标准 bundle：Host 服务 + Agent 工具 + Web 面板。
 
 > GitHub: <https://github.com/tyxt-zvid/dsh-workspace-hub> · 完整安装、首次使用与 FAQ 见 [GUIDE.md](GUIDE.md)。
 >
 > 市场：在 DSH 的 **Plugins → Discover → Add index source** 添加 `https://raw.githubusercontent.com/tyxt-zvid/zvid-plugins/main/index.json`，即可从 **ZVID Plugins** 市场安装。
+
+![所有工作区首页](docs/images/all-workspaces.png)
+
+*「所有工作区」：跨区注意力、正在运行、环境状态与工作区卡片；点卡片进入某个工作区。*
+
+## 界面
+
+| 工作区概览 | 任务 |
+|---|---|
+| ![工作区概览](docs/images/overview.png) | ![任务](docs/images/tasks.png) |
+| 注意力队列 → 正在运行 → 环境 | 快速捕获、分组、行内编辑、运行条 |
+
+| 对话 / 子会话 | 工作区设置（亮色） |
+|---|---|
+| ![对话](docs/images/sessions.png) | ![设置](docs/images/settings.png) |
+| 子会话行内发消息、中断、关闭/重开 | 规则链 / 上下文 / 技能，独立保存 |
+
+| 命令面板 `⌘K` | 派发 sheet |
+|---|---|
+| ![命令面板](docs/images/palette.png) | ![派发](docs/images/dispatch.png) |
+| 跨区搜索任务/会话、切换工作区 | 新建对话或已有对话，可附补充说明 |
 
 ## 功能一览
 
@@ -21,7 +42,7 @@
 **方式 A（Desktop，会话内）**：
 
 ```js
-plugin_manager({ action: 'install_bundle', target: '/abs/path/dsh-workspace-hub-0.2.0.tgz' })
+plugin_manager({ action: 'install_bundle', target: '/abs/path/dsh-workspace-hub-0.2.1.tgz' })
 ```
 
 `target` 也可为本地目录、git 地址或 npm 包名/版本。
@@ -29,7 +50,7 @@ plugin_manager({ action: 'install_bundle', target: '/abs/path/dsh-workspace-hub-
 **方式 B（CLI）**：
 
 ```bash
-dsh plugin --profile desktop add /abs/path/dsh-workspace-hub-0.2.0.tgz
+dsh plugin --profile desktop add /abs/path/dsh-workspace-hub-0.2.1.tgz
 ```
 
 安装后刷新页面；主界面标题栏左侧会出现「中枢」按钮。
@@ -88,7 +109,13 @@ npm pack --pack-destination dist          # 生成 tarball（按 files 过滤）
 
 ## 工作区中枢（顶层功能，跨工作区）
 
-中枢是 DSH 的**顶层场所**，不是某个工作区的附属面板，也不创建任何会话、不能像对话一样被删除：
+中枢是 DSH 的**顶层场所**，不是某个工作区的附属面板，也不创建任何会话、不能像对话一样被删除。
+
+![信息架构](docs/images/architecture.svg)
+
+*侧边栏常驻入口 → 所有工作区首页 → 工作区 Console；All 用 `hub.overview`，下钻用 `hub.snapshot`。*
+
+
 
 - **入口**：侧边栏常驻「工作区中枢」（`sidebar.panellist`，与日程等平级）；标题栏「中枢 / Hub」按钮是快捷方式——打开中枢并定位到当前会话所属工作区。
 - **全局只有一个面板**（`main` key `workspace-hub`），首页是「所有工作区」：跨区注意力队列、正在运行、工作区卡片与全局状态条；点卡片或注意力项进入该工作区的 Console。
