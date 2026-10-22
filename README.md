@@ -2,9 +2,9 @@
 
 给 DSH 一个**顶层工作区中枢**：跨工作区总览 + 每个工作区的共享任务板、会话/子会话、开发服务器状态与规则/上下文/技能。DSH（DeepSeek Harness）标准 bundle：Host 服务 + Agent 工具 + Web 面板。
 
-> GitHub: <https://github.com/tyxt-zvid/dsh-workspace-hub> · 完整安装、首次使用与 FAQ 见 [GUIDE.md](GUIDE.md)。
+> GitHub: [tyxt-zvid/dsh-workspace-hub](https://github.com/tyxt-zvid/dsh-workspace-hub) · 完整安装、首次使用与 FAQ 见 [GUIDE.md](GUIDE.md)。
 >
-> 市场：在 DSH 的 **Plugins → Discover → Add index source** 添加 `https://raw.githubusercontent.com/tyxt-zvid/zvid-plugins/main/index.json`，即可从 **ZVID Plugins** 市场安装。
+> 市场：[ZVID Plugins](https://github.com/tyxt-zvid/zvid-plugins) · 索引：[index.json](https://raw.githubusercontent.com/tyxt-zvid/zvid-plugins/main/index.json) · 在 DSH **Plugins → Discover → Add index source** 粘贴索引地址，即可搜索并安装 **Workspace Hub**。
 
 ![所有工作区首页](docs/images/all-workspaces.png)
 
@@ -39,7 +39,13 @@
 
 要求：DSH `0.2.1-rc.x`（见 `engines.dsh`）。
 
-**方式 A（Desktop，会话内）**：
+**方式 0（推荐 · 市场）**：
+
+1. DSH 打开 **Plugins → Discover → Add index source**；
+2. 粘贴市场索引：[https://raw.githubusercontent.com/tyxt-zvid/zvid-plugins/main/index.json](https://raw.githubusercontent.com/tyxt-zvid/zvid-plugins/main/index.json)（市场仓库：[tyxt-zvid/zvid-plugins](https://github.com/tyxt-zvid/zvid-plugins)）；
+3. 在市场下拉选择 **ZVID Plugins / ZVID 插件市场**，搜索 **Workspace Hub**，点 **Install**。
+
+**方式 A（Desktop，会话内，离线 tarball）**：
 
 ```js
 plugin_manager({ action: 'install_bundle', target: '/abs/path/dsh-workspace-hub-0.2.1.tgz' })
