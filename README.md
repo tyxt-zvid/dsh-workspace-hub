@@ -8,11 +8,11 @@
 
 ## 功能一览
 
-- **任务板（工作区共享）**：跨会话创建/认领/更新/派发任务；并发安全（锁 + 每任务 CAS + 租约）；派发可新建会话或唤醒已有会话。
-- **会话总览**：工作区全部主会话 + 嵌套子会话，可直接打开、为主会话新建子会话。
-- **子会话（sub chat）**：真实 child session，可 create/send/interrupt/close/reopen；生命周期由主对话管理；普通完成不打扰主对话（need-to-know）。
-- **工作区能力**：只读展示继承的 AGENTS.md 链与技能目录；可编辑工作区 AGENTS.md、中枢托管 CONTEXT.md、新建 .dsh/skills 技能。
-- **Agent 工具**：`workspace_task`、`subchat`，任何会话可用。
+- **概览（工作台首页）**：注意力队列（阻塞 / 可能卡住 / 执行结束待确认 / 子会话未读 / 环境异常）+ 正在运行 + 环境状态，一屏回答「现在怎么样」。
+- **任务板（工作区共享）**：跨会话创建/更新/派发任务；快速捕获、状态筛选与分组、行内编辑/备注、6 秒删除撤销；并发安全（锁 + 每任务 CAS + 租约）；派发可新建会话或交给已有会话。
+- **对话**：工作区全部主会话 + 子会话树；子会话行内发消息/中断/关闭/重开，显示已关闭与未读。
+- **工作区设置**：继承规则链 + 可编辑工作区 AGENTS.md、中枢托管 CONTEXT.md、新建 .dsh/skills 技能（独立保存 + 未保存状态）。
+- **Agent 工具**：`workspace_task`、`subchat`，任何会话可用；数据通路新增聚合快照 `hub.snapshot`。
 
 ## 安装（使用者）
 
@@ -21,7 +21,7 @@
 **方式 A（Desktop，会话内）**：
 
 ```js
-plugin_manager({ action: 'install_bundle', target: '/abs/path/dsh-workspace-hub-0.1.0.tgz' })
+plugin_manager({ action: 'install_bundle', target: '/abs/path/dsh-workspace-hub-0.2.0.tgz' })
 ```
 
 `target` 也可为本地目录、git 地址或 npm 包名/版本。
@@ -29,7 +29,7 @@ plugin_manager({ action: 'install_bundle', target: '/abs/path/dsh-workspace-hub-
 **方式 B（CLI）**：
 
 ```bash
-dsh plugin --profile desktop add /abs/path/dsh-workspace-hub-0.1.0.tgz
+dsh plugin --profile desktop add /abs/path/dsh-workspace-hub-0.2.0.tgz
 ```
 
 安装后刷新页面；主界面标题栏左侧会出现「中枢」按钮。
@@ -82,27 +82,110 @@ npm pack --pack-destination dist          # 生成 tarball（按 files 过滤）
 |---|---|
 | `workspace_task` | `list / get / create / update / claim / release / dispatch / delete`；跨会话任务板。 |
 | `subchat` | `list / create / send / interrupt / close / reopen`；当前对话的 sub chat。 |
+| `dev_server` | `start / status / stop`；按工作区的 `servers.json` 起停开发服务器。 |
 
 工具对全部 Agent 全局注册（root 级），随插件卸载而消失。
 
-## 工作区中枢（工作区级功能，不是会话）
+## 工作区中枢（顶层功能，跨工作区）
 
-中枢是**每个工作区自带的功能**，不创建任何会话、不能像对话一样被删除：
+中枢是 DSH 的**顶层场所**，不是某个工作区的附属面板，也不创建任何会话、不能像对话一样被删除：
 
-- 看板面板按工作区注册为 `workspace-hub:<workspaceId>`，面板固定读取该工作区的任务板，不再出现“全局面板显示某个工作区内容”的错位。
-- 入口：主界面标题栏最左侧（会话标题之前）的 **中枢 / Hub** 按钮。该按钮通过 `conversation.header.leading` 注册，无会话时也存在；打开当前所查看工作区的看板。
-- 面板内容只属于该工作区；工作区被删除时中枢随之消失（因为它就是该工作区的一部分）。
+- **入口**：侧边栏常驻「工作区中枢」（`sidebar.panellist`，与日程等平级）；标题栏「中枢 / Hub」按钮是快捷方式——打开中枢并定位到当前会话所属工作区。
+- **全局只有一个面板**（`main` key `workspace-hub`），首页是「所有工作区」：跨区注意力队列、正在运行、工作区卡片与全局状态条；点卡片或注意力项进入该工作区的 Console。
+- **工作区是中枢内部的一个维度**：任务板、会话、环境、规则仍按工作区隔离存储；中枢只提供统一入口与跨区聚合，不改变并发/租约/CAS 语义。
+- 面包屑「所有工作区 / 名称」可返回 All；工作区视图头部可切换工作区；选中工作区、All 筛选与滚动状态全局持久化。
 - 旧版本曾为每个工作区创建「工作区中枢」会话；升级后 Host 会自动把这些会话归档、删除 `hub.json` 映射（一次性迁移），中枢不再占用会话行。
-- 平台限制：这一版 DSH 的侧边栏工作区行（workspace entry）没有可插入按钮的槽位（`sidebar.workspaces` 只有会话行 action/hover/leading 与 directoryFlow 子槽），因此无法在不接管整个工作区浏览区的前提下把按钮放到工作区行上；按钮放在工作区主视图的入口标题栏，全局可见且跟随当前工作区。
 
-## Web 面板
+## Web 面板（Console）
 
-- 每个工作区一块看板面板，两个标签页：
-  - **任务**：状态筛选、列表、新建、认领/释放、完成/重开、删除、派发（新建会话或选择已有会话）；
-  - **会话**：工作区内的**全部主会话**列表，各自子会话嵌套在下方；可打开主会话/子会话、为主会话新建子会话、关闭子会话。不再只显示“当前主会话”的子会话；
-  - **工作区**（只读）：当前生效的规则/上下文链（用户全局 `AGENTS.md` → 项目根 → 当前目录，含 `CLAUDE.md` 与 `.local` 覆盖层、是否存在与字节数、projectRoot）和该工作区可见的技能目录（来源：工作区/用户/内置/自定义，模型/用户可调用，源文件路径）。不写文件、不改全局配置。
-- 数据通路：同源认证 JSON 路由 `POST /workspace-hub/api/<method>`，每个请求先过 `ctx.connection.requestRejection(req)`（Host/Origin 防篡改 + 浏览器签名 Cookie 认证），失败即拒绝；面板每 4 秒轮询一次（页面隐藏时暂停），所有写操作后立即刷新。
-- 面板只依赖 React 与主题 token（`--dsw-alias-*`），不 import 任何 Harness Client 包。
+中枢是一个全局面板：默认进入「所有工作区」总览，选中工作区后进入该工作区的 Console（头部 + 状态条 + 三个主视图 + 设置），不是四个并列标签页：
+
+- **所有工作区**：全局状态条（工作区/进行中/待办/阻塞/环境）、跨区「需要你处理」与「正在运行」、工作区卡片网格（任务计数/会话/环境/更新时间）；点卡片 drill-in。
+- **概览**：需要你处理（每条带可解释原因与一个主操作）→ 正在运行（任务 + 执行会话 + 最近活动）→ 环境（逐台服务器启动/停止/打开）。空态有下一步行动，加载用骨架，同步中断保留旧数据并提示。
+- **任务**：快速捕获（`Enter` 创建、`Tab` 展开详情）、状态筛选/分组/搜索、行内展开编辑标题/详情/优先级与追加备注、查看运行条、派发 sheet（新建对话或已有对话，可附补充说明）、删除 6 秒撤销。已取消任务可筛选；已完成默认折叠。
+- **对话**：工作区全部主会话 + 子会话树；子会话行内发消息、中断、关闭/重开；「显示已关闭」开关、未读徽标；可把任意会话设为新建子会话的父会话。
+- **工作区设置**（头部 ⚙）：规则链（继承顺序、来源、字节数、是否可编辑）、CONTEXT.md、技能列表/新建；每个表单独立保存、显示未保存状态，`⌘S` 保存。
+- **命令面板 `⌘K`**：新建任务/子会话、启动服务器、打开设置、刷新、所有工作区/切换工作区，以及任务/会话模糊搜索（All 视图下跨区列出，执行时自动定位工作区）。
+- **键盘**（仅面板内）：`⌘K` 命令面板 · `n` 捕获 · `/` 搜索 · `j/k` 行焦点 · `↵` 展开 · `x` 完成 · `e` 编辑 · `d` 派发 · `g o/t/c` 切换视图 · `Esc` 关闭浮层。
+- 数据通路：同源认证 JSON 路由 `POST /workspace-hub/api/<method>`，先过 `ctx.connection.requestRejection(req)`（Host/Origin 防篡改 + 浏览器签名 Cookie 认证），失败即拒绝。All 视图用 `hub.overview`（一次返回全部工作区的任务板/会话计数/服务器 cheap summary），进入工作区后用 `hub.snapshot`（含真实服务器探测）；4 秒轮询、页面隐藏暂停、失败指数退避。`hub.snapshot` 不可用时自动回退到旧的 `context + tasks.list + hub.sessions` 三连。
+- 写操作是**行级乐观更新**：只锁当前行，失败按行回滚；CAS 冲突就地提示并给出「采用最新/重试」；不再整页禁用、不再使用 `window.confirm`。
+- 面板只依赖 React 与主题 token（`--dsw-alias-*`），不 import 任何 Harness Client 包；视觉使用 6 档字号、发丝线、单一主色，暗/亮主题自动成立。
+
+## 工作区开发服务器（界面状态 + 工具）
+
+Web 游戏一类的工作区需要先起本地服务器才能看页面。中枢把这个状态直接放到界面上，不占用任何快捷键：
+
+- **标题栏状态胶囊**：当前工作区声明了服务器时，主界面标题栏（「中枢」按钮旁）出现一个「服务器」胶囊：状态点在**全部就绪**时为绿色、有进程在运行/启动中为琥珀色、全部停止为灰色、启动失败为红色，右侧数字是 `就绪数/总数`（如 `1/1`）。没有配置服务器的工作区不显示。
+- 点胶囊打开中枢的面板并展开**环境 popover**（不再有独立的服务器标签页）。
+- **环境区**（概览底部 / 状态条「环境 n/n」）：逐条列出声明的实例，显示状态（已就绪 / 启动中 · 已 N 秒 / 已停止 / 外部运行 / 启动失败）、启动命令、工作目录与 URL，并提供 **启动 / 停止 / 打开 / 查看日志尾**。停止只结束中枢自己拉起的进程，不碰你手动在终端里起的服务；外部实例标注「外部运行」且不提供停止。
+- 状态随聚合快照每 4 秒刷新一次，页面隐藏时暂停；启动中是行级 pending，不阻塞其它服务器/任务操作。
+- 插件卸载 / 禁用时，中枢会结束自己启动的全部进程，不会留下占端口的孤儿。
+
+**自动识别（默认，无需配置文件）**：工作区没有 `servers.json` 时，中枢会从项目文件推断服务器——界面上标「自动识别」，写配置即覆盖：
+
+- 依次检查 `dev / develop / play / serve / start / preview` 等 `package.json` 脚本，跳过 build/test/electron 之类任务；
+- 端口来源：脚本参数（`--port`、`-p`、`PORT=`、文件名后的端口）、`vite.config.*` 里的 `port`、被 `node` 执行的服务器文件里的 `DEFAULT_PORT = N` / `process.env.PORT || N` / `listen(N)`，最后用框架默认端口（Vite 5173、Next/Nuxt 3000、Angular 4200、Astro 4321、webpack-dev-server 8080…）；
+- 健康检查：服务器文件里出现 `/api/health` 或 `/health` 就用它，否则用 `/`；
+- `dev` 之外若有 `server` / `api` / `backend` 脚本，会识别为第二个实例；
+- 包管理器按 `packageManager` 字段或 lockfile 选择 npm / pnpm / yarn / bun；
+- 没有 `package.json` 时，只接受根目录唯一的 `serve.mjs` / `server.mjs`（且真的调用 `listen`）。
+
+不想要自动识别时，写 `{"version": 1, "servers": []}` 显式关闭；想自定义命令/端口/多实例时写完整配置（显式配置永远优先）。monorepo 子包、脚本里算出来的端口这些推断不到的，也直接写配置。
+
+声明文件：`<workspace>/.dsh/workspace-hub/servers.json`（工作区本地、可随仓库备份）。
+
+```json
+{
+  "version": 1,
+  "servers": [
+    {
+      "name": "请神 · Layer 1",
+      "command": "node layer1/server.mjs",
+      "cwd": ".",
+      "url": "http://127.0.0.1:4180/",
+      "health": "http://127.0.0.1:4180/api/health",
+      "readyTimeoutMs": 20000
+    }
+  ]
+}
+```
+
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `name` | 否 | 服务器名（默认 `server-N`），`dev_server` 的 `names` 用它选择 |
+| `command` | 二选一 | shell 风格命令行（支持单/双引号）；跨平台项目建议用 `argv` |
+| `argv` | 二选一 | 参数数组，例如 `["node", "layer1/server.mjs"]` |
+| `cwd` | 否 | 相对工作区根目录，默认 `.`；不允许逃出工作区 |
+| `url` | 否 | 启动成功后要打开的地址；也作为默认健康检查地址 |
+| `health` | 否 | 就绪探测地址（HTTP 2xx 视为就绪）；默认取 `url` |
+| `readyTimeoutMs` | 否 | 等待就绪的上限，默认 20000，限制在 1–120 秒 |
+
+`url` / `health` 只接受 http(s)。进程通过 Host 的 `subprocess` 服务启动：`command` 的第一个词按宿主 PATH 解析（macOS Desktop 的 PATH 含 nvm/homebrew），stdout/stderr 各保留 64KB 供失败时回显；判定失败时返回退出码与输出尾部。
+
+### 在其他工作区启用
+
+插件和界面是 profile 级的（装一次、所有工作区共享）。**大多数情况什么都不用做**：打开该工作区的会话，「中枢」旁会自动出现「服务器」胶囊——中枢已从 `package.json` 自动识别出 dev/start 脚本、端口和健康检查（标「自动识别」）。
+
+只有自动识别不准或需要多实例时，才在该工作区**根目录**写 `.dsh/workspace-hub/servers.json` 覆盖（显式配置优先；写空 `servers` 数组可关闭识别）。
+
+常用配置写法：
+
+| 项目类型 | `command` | `url` / `health` |
+|---|---|---|
+| 极简静态服（如 `serve.mjs`） | `node serve.mjs` | `http://127.0.0.1:4173/` + `/health` |
+| Vite / Next / webpack dev | `npm run dev` | 首页（Vite 对 `/` 返回 200 即可），`readyTimeoutMs` 给 30000 |
+| 前后端两个进程 | `servers` 数组写两条 | 各自 URL，可单独启停 |
+| 需要固定端口/环境变量 | 在项目里加 npm script（如 `"dev:local": "HOST=127.0.0.1 vite --port 5179"`），`command` 调它 | 当前配置格式不直接支持 `env` |
+
+注意：每个工作区各用各的端口，避免多个工作区同时运行时撞端口。
+
+本机 `games/vw-flower`（4173）与 `games/tyler-diver`（Vite 5179）已删除示例配置，现在完全依赖自动识别——打开这两个工作区仍会看到同样的「自动识别」实例。
+
+同一个操作也暴露为模型工具，Agent 在需要起服务器看页面时可以直接调用：
+
+| 工具 | 用途 |
+|---|---|
+| `dev_server` | `start / status / stop`，可选 `names`；与服务器页签走同一条 Host 实现 |
 
 ## 安装
 
@@ -126,6 +209,9 @@ bundle 的 `cordis.patch.yml` 插入一行 `workspace-hub`；Client 侧 `dsh.cli
 - 跨会话派发：任务派发到新建会话（`session-5fe3bda9-…`），该会话收到提示词后自行 `update` 任务为 `done` 并写入 note，证明跨会话读写同一块板。
 - 子会话：`create`（回复 `SUBCHAT_OK`）→ `list` → `close` → `reopen` → `send`（冷恢复后回复 `RESUMED`）→ `close` 全部通过；回复以 `subagent-settled` 通知回到主对话。
 - 未验证：面板的像素级视觉表现（本会话无浏览器控制），仅验证了槽位注册与数据通路；面板在亮/暗主题下的实际观感需要在页面上人工确认。
+- 开发服务器（2026-10-21）：界面版（无快捷键）。`node test/servers.test.mjs` 覆盖配置解析/校验、真实进程启动→就绪→复用→停止→卸载、外部进程识别、可执行文件缺失；`node test/client-ui.test.mjs` 验证 Client `apply` 不抛错、header/sidebar/overlay 槽位注册保持、且不再调用快捷键服务或注册快捷键命令。插件重装（remove + install）后：`POST /workspace-hub/api/servers.status` 未认证返回 `401`（路由已加载）；`dev_server` 出现在调用方工具 schema 中（Host 代码已生效）；旧版快捷键 toast 的 `shell.overlay` occupant 消失（新 Client 代码已生效）。用独立会话实测 Host 路径：`dev_server start` → `请神 · Layer 1: started · ready`，`curl http://127.0.0.1:4180/api/health` 返回 `{"ok":true,...,"version":"layer1.3.1"}`，`lsof` 确认 node 监听 4180，`status` → `running · ready`，`stop` → `Stopped: 请神 · Layer 1`，结束 `lsof` 为 `port 4180 free`。
+- 自动识别（2026-10-22）：`node test/discover.test.mjs` 覆盖 Vite 端口/配置/包管理器、node 服务器文件（`DEFAULT_PORT`/`listen`/健康路由）、文件名后端口、前后端双实例、electron/build 脚本排除、无 package.json 的 `serve.mjs`/`server.mjs` 回退，以及「显式配置覆盖识别」「空配置关闭识别」；最后一条用真实 `npm run start` 进程走完「识别 → 启动 → 就绪 → 停止」。对真实工作区跑 `discoverServers`：jiuguan → `pnpm run play` / 4180（脚本指向的 `layer1/server.mjs`），vw-flower → `npm run start` / 4173 + `/health`，tyler-diver → `pnpm run dev` / 5179（Vite 配置端口），无 package.json 的 `trailers` → 空。live 验证：临时移走 jiuguan 的 `servers.json` 后，`dev_server status` 返回 `Workspace … (auto-detected from package.json)` 与 `last-call-tavern · play: already running · ready — http://127.0.0.1:4180/`（正确识别外部运行的实例，未启动/未杀进程），随后已把配置恢复并校验 JSON。收尾验收：删除 vw-flower / tyler-diver 的示例配置后，`resolveServerConfig` 对二者均返回 `source=discovered`，并按识别出的命令实际启动——`npm run start` 使 4173 `/health` 返回 `{"ok":true}`，`pnpm run dev` 使 5179 返回 200（Vite ready 170ms），两者停止后端口均释放。
+- 未验证：标题栏胶囊与服务器页签的像素级观感（本会话无浏览器控制），需在页面上人工确认；数据通路、状态刷新、自动识别与 Host 行为已覆盖。
 - 环境备注：验证期间另一个并发会话在同一 profile 中安装并启用了 `@local/grok-bot` bundle，且正在通过本插件的工具使用共享任务板；两者工具名/面板 key 不冲突，本插件保持 `active`。
 
 ## 如何新建子会话

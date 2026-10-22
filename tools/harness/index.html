@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workspace Hub harness</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/theme.css">
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--dsw-alias-bg-base);
+    color: var(--dsw-alias-label-primary);
+    font-family: var(--dsw-font-family, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif);
+    font-size: 13px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  #app { display: flex; height: 100vh; min-width: 0; }
+  /* Inert stand-in for the real DSH sidebar: only reserves the width the panel
+     actually gets inside the GUI (1440 - 248). Not part of the panel under test. */
+  #fake-shell {
+    flex: 0 0 248px;
+    min-width: 0;
+    border-right: 0.5px solid var(--dsw-alias-border-l1);
+    background: var(--dsw-specific-sidebar-fill, var(--dsw-alias-bg-layer-2));
+    padding: 12px 12px;
+    box-sizing: border-box;
+    color: var(--dsw-alias-label-secondary);
+    font-size: 12px;
+  }
+  #fake-shell .fs-title { font-weight: 600; color: var(--dsw-alias-label-primary); margin-bottom: 10px; }
+  #fake-shell .fs-row { display: flex; align-items: center; gap: 8px; height: 30px; border-radius: 8px; padding: 0 8px; }
+  #fake-shell .fs-row.active { background: var(--dsw-specific-sidebar-nav-item-active, var(--dsw-alias-interactive-bg-hover)); color: var(--dsw-alias-label-primary); }
+  #fake-shell .fs-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dsw-alias-state-idle-primary); flex: none; }
+  #fake-shell .fs-head { font-size: 11px; color: var(--dsw-alias-label-tertiary); margin: 16px 8px 6px; letter-spacing: .04em; }
+  #nav-slot { display: flex; align-items: center; min-height: 0; margin: 0 0 8px; color: var(--dsw-alias-label-secondary); }
+  #nav-slot:empty { display: none; }
+  #nav-slot > * { max-width: 100%; }
+  body.bare #fake-shell { display: none; }
+  #panel-host { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+  #panel-host > * { min-height: 0; }
+  #boot { padding: 24px; color: var(--dsw-alias-label-secondary); }
+  #harness-error {
+    position: fixed; inset: 12px; z-index: 9999; display: none; overflow: auto;
+    background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-state-error-primary);
+    border-radius: 12px; padding: 16px; color: var(--dsw-alias-label-primary);
+    font: 12px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap;
+  }
+  #harness-error.on { display: block; }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="fake-shell" aria-hidden="true">
+    <div id="nav-slot"></div>
+    <div class="fs-title">DeepSeek Harness</div>
+    <div class="fs-row active"><span class="fs-dot"></span>工作区中枢</div>
+    <div class="fs-head">在当前工作区</div>
+    <div class="fs-row"><span class="fs-dot"></span>整理工作区路径的展示规则</div>
+    <div class="fs-row"><span class="fs-dot"></span>修复暗色浮层</div>
+    <div class="fs-row"><span class="fs-dot"></span>中枢重构</div>
+    <div class="fs-head">其他工作区</div>
+    <div class="fs-row"><span class="fs-dot"></span>dsh</div>
+    <div class="fs-row"><span class="fs-dot"></span>snippets</div>
+  </aside>
+  <div id="panel-host"><div id="boot">harness boot…</div></div>
+</div>
+<div id="harness-error" role="alert"></div>
+<script src="/vendor/react.js"></script>
+<script src="/vendor/react-dom.js"></script>
+<script src="/mock-data.js"></script>
+<script src="/harness.js"></script>
+</body>
+</html>

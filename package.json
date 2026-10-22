@@ -1,9 +1,9 @@
 {
   "name": "@local/dsh-workspace-hub",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Workspace-scoped task board shared across sessions, plus main-session-managed sub chats.",
+  "description": "Top-level workspace hub: cross-workspace overview, shared task boards, sessions/sub-chats and dev-server status, with workspace rules/context/skills.",
   "license": "MIT",
   "keywords": [
     "dsh",
@@ -32,11 +32,16 @@
     "icon.svg",
     "README.md",
     "GUIDE.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "test": "node test/core.test.mjs",
-    "pack:tarball": "npm pack --pack-destination dist"
+    "test": "node test/core.test.mjs && node test/snapshot.test.mjs && node test/overview.test.mjs && node test/client-ui.test.mjs",
+    "pack:tarball": "npm pack --pack-destination dist",
+    "test:core": "node test/core.test.mjs",
+    "test:snapshot": "node test/snapshot.test.mjs",
+    "test:client": "node test/client-ui.test.mjs",
+    "test:overview": "node test/overview.test.mjs"
   },
   "dsh": {
     "bundle": {

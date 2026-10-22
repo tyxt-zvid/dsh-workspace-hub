@@ -105,6 +105,30 @@ try {
   check('done clears assignee', done.task.assignee === null);
   const deleted = await mutateBoard(root, (b) => T.deleteTask(b, root, alice, { id: done.task.id }));
   check('delete returns id', deleted.deleted.id === done.task.id);
+  check('delete returns restorable snapshot', deleted.deleted.title === done.task.title && deleted.deleted.status === 'done');
+
+  // Undo: restore the deleted snapshot under its original id.
+  const restored = await mutateBoard(root, (b) => T.restoreTask(b, root, alice, deleted.deleted));
+  check('restore keeps id and title', restored.task.id === deleted.deleted.id && restored.task.title === deleted.deleted.title);
+  check('restore resets revision', restored.task.revision === 1);
+  check('restore marks result', restored.restored === true);
+  let restoredBoard = await readBoardFile(root);
+  check('restored task is on the board', restoredBoard.tasks.some((task) => task.id === deleted.deleted.id));
+  await throws(
+    'restore refuses duplicate id',
+    () => mutateBoard(root, (b) => T.restoreTask(b, root, alice, deleted.deleted)),
+    'task-exists',
+  );
+
+  // Restoring a claimed task keeps its assignee and dispatch history.
+  const undoClaimed = await mutateBoard(root, (b) => T.createTask(b, root, alice, { title: 'Claimed work' }));
+  const owned = await mutateBoard(root, (b) =>
+    T.claimTask(b, root, alice, { id: undoClaimed.task.id, expectedRevision: undoClaimed.task.revision }),
+  );
+  const undoClaimedDeleted = await mutateBoard(root, (b) => T.deleteTask(b, root, alice, { id: owned.task.id }));
+  const undoClaimedRestored = await mutateBoard(root, (b) => T.restoreTask(b, root, alice, undoClaimedDeleted.deleted));
+  check('restore keeps the assignee', undoClaimedRestored.task.assignee?.sessionId === alice.sessionId, JSON.stringify(undoClaimedRestored.task.assignee));
+  check('restore keeps the doing status', undoClaimedRestored.task.status === 'doing');
 
   // Corrupt board fails loud and stays unchanged.
   const file = boardPath(root);
@@ -178,6 +202,10 @@ try {
   const catalog = await subchats.catalog(root);
   check('catalog hides closed sub chats', catalog.subchats.length === 1 && catalog.subchats[0].id === 'child-open');
   check('catalog carries the parent id', catalog.subchats[0].parentSessionId === 'parent-1');
+  const fullCatalog = await subchats.catalog(root, { includeClosed: true, lastReply: true });
+  check('catalog includeClosed keeps closed rows', fullCatalog.subchats.length === 2);
+  check('catalog exposes last reply field', fullCatalog.subchats.every((row) => 'lastAssistantMessage' in row));
+  check('closed row has closed status', fullCatalog.subchats.some((row) => row.id === 'child-closed' && row.status === 'closed'));
 
   const leftovers = (await readFile(file, 'utf8')) !== undefined;
   check('board still readable after tests', leftovers === true);

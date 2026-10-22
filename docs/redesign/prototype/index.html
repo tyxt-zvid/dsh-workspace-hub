@@ -1,0 +1,2617 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>工作区中枢 · 交互原型</title>
+<style>
+/* ============================================================
+   工作区中枢 · Graphite Console 原型
+   DSH-native tokens · dark first · hairline density
+   ============================================================ */
+
+/* ---- tokens: light (default) ---- */
+:root{
+  --bg:#ffffff;
+  --layer-1:#ffffff;
+  --layer-2:#f9fafb;
+  --layer-3:#ebeef2;
+  --fg:#0f1115;
+  --fg-2:#61666b;
+  --fg-3:#81858c;
+  --border:#0000000a;
+  --border-strong:#0000001a;
+  --accent-ink:#0f1115;
+  --accent-on:#ffffff;
+  --blue:#4176e6;
+  --green:#22c55e;
+  --amber:#f59e0b;
+  --red:#ec1313;
+  --hover:#2631480f;
+  --active:#2631481a;
+  --toast-bg:#353638;
+  --fg-deco:#81858c;
+  --amber-text:#b45309;
+  --green-icon:#15803d;
+  --backdrop:#f2f3f5;
+  --scrim:rgba(0,0,0,.28);
+  --shadow:0 24px 64px rgba(0,0,0,.18);
+  --focus:0 0 0 2px var(--blue);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --t1:100ms; --t2:160ms; --t3:200ms;
+  --ease:cubic-bezier(.4,0,.2,1);
+  color-scheme:light;
+}
+
+/* ---- tokens: dark ---- */
+[data-theme="light"]{
+  /* light-theme legibility override (pending host token fix) */
+  --fg-3:#61666b;
+  --fg-deco:#81858c;
+  --amber-text:#b45309;
+  --green-icon:#15803d;
+  --border-strong:#00000029;
+}
+
+[data-theme="dark"]{
+  --bg:#151517;
+  --layer-1:#232324;
+  --layer-2:#2c2c2e;
+  --layer-3:#353638;
+  --fg:#f9fafb;
+  --fg-2:#cfd3d6;
+  --fg-3:#adb2b8;
+  --border:#ffffff0f;
+  --border-strong:#ffffff1f;
+  --accent-ink:#f9fafb;
+  --accent-on:#0f1115;
+  --blue:#7aaaff;
+  --green:#22c55e;
+  --amber:#f59e0b;
+  --red:#f25a5a;
+  --hover:#ffffff14;
+  --active:#ffffff24;
+  --toast-bg:#2c2c2e;
+  --fg-deco:#adb2b8;
+  --amber-text:#f59e0b;
+  --green-icon:#22c55e;
+  --backdrop:#0b0b0c;
+  --scrim:rgba(0,0,0,.42);
+  --shadow:0 24px 64px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+
+/* ---- base ---- */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--backdrop);
+  color:var(--fg);
+  font-family:var(--font);
+  font-size:13px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  transition:background var(--t3) var(--ease);
+}
+[hidden]{display:none!important}
+button{appearance:none;border:0;background:none;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;text-align:inherit}
+input,textarea,select{font:inherit;color:inherit}
+a{color:var(--blue);text-decoration:none}
+h1,h2,h3,p{margin:0}
+svg{display:block}
+::selection{background:var(--active)}
+:where(button,input,textarea,select,a,summary):focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.row:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--blue)}
+*{scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---- app frame ---- */
+.app{min-height:100%;display:flex;align-items:center;justify-content:center;padding:8px 16px}
+.panel{
+  position:relative;
+  display:flex;flex-direction:column;
+  width:min(1080px,100%);
+  height:min(900px,calc(100vh - 16px));
+  min-height:520px;
+  background:var(--bg);
+  border:1px solid var(--border-strong);
+  border-radius:12px;
+  overflow:hidden;
+  transition:background var(--t2) var(--ease),border-color var(--t2) var(--ease);
+}
+.ic{display:block;flex:none}
+.spacer{flex:1;min-width:0}
+.ellip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.num,.tnum{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono);font-size:12px}
+.hint{font-size:11px;color:var(--fg-3)}
+.kbd{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:16px;height:16px;padding:0 4px;
+  border:1px solid var(--border-strong);border-radius:4px;
+  background:var(--layer-2);
+  font:11px/1 var(--mono);color:var(--fg-3);
+}
+
+/* ---- header ---- */
+.hd{
+  flex:none;height:56px;display:flex;align-items:center;gap:12px;
+  padding:0 max(24px,calc((100% - 960px)/2));border-bottom:1px solid var(--border);
+}
+.glyph{
+  width:26px;height:26px;flex:none;border-radius:8px;
+  background:var(--layer-2);border:1px solid var(--border-strong);
+  display:grid;place-items:center;color:var(--fg-2);
+}
+.hd-id{min-width:0}
+.hd-title{display:flex;align-items:baseline;gap:8px;font-size:15px;font-weight:600;line-height:21px;color:var(--fg)}
+.hd-ws{font-size:12px;font-weight:400;color:var(--fg-3)}
+.hd-path{display:flex;align-items:center;gap:2px;margin-top:1px;font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--fg-3)}
+.hd-path .p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px}
+.icon-btn{
+  width:28px;height:28px;flex:none;border-radius:8px;
+  display:inline-flex;align-items:center;justify-content:center;
+  color:var(--fg-2);transition:background var(--t1) var(--ease),color var(--t1) var(--ease);
+}
+.icon-btn:hover{background:var(--hover);color:var(--fg)}
+.icon-btn.xs{width:24px;height:24px;border-radius:8px;color:var(--fg-3)}
+.icon-btn.sm{width:24px;height:24px;border-radius:8px;color:var(--fg-3)}
+.hd-right{margin-left:auto;display:flex;align-items:center;gap:6px;flex:none}
+.sync{height:24px;padding:0 6px;border-radius:8px;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--fg-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sync:hover{background:var(--hover);color:var(--fg-2)}
+.sync .ic{color:var(--fg-3)}
+.sync.warn{color:var(--amber)}
+.key-btn{
+  height:28px;padding:0 8px;border-radius:8px;border:1px solid var(--border-strong);
+  display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--fg-2);
+  transition:background var(--t1) var(--ease),color var(--t1) var(--ease);
+}
+.key-btn:hover{background:var(--hover);color:var(--fg)}
+.key-btn .ic{color:var(--fg-3)}
+.theme-seg{display:inline-flex;align-items:center;gap:1px;height:24px;padding:2px;border:1px solid var(--border);border-radius:8px;background:var(--layer-2)}
+.theme-seg button{width:24px;height:24px;border-radius:4px;display:grid;place-items:center;color:var(--fg-3)}
+.theme-seg button:hover{color:var(--fg-2)}
+.theme-seg button.on{background:var(--layer-3);color:var(--fg)}
+.back{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 4px;border-radius:8px;font-size:13px;color:var(--fg-2)}
+.back:hover{background:var(--hover);color:var(--fg)}
+
+/* ---- status strip ---- */
+.strip{
+  flex:none;height:36px;display:flex;align-items:center;gap:2px;
+  padding:0 max(24px,calc((100% - 960px)/2));border-bottom:1px solid var(--border);
+  font-size:12px;line-height:1.5;color:var(--fg-2);
+}
+.strip .item{height:22px;padding:0 6px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;color:var(--fg-2);white-space:nowrap}
+.strip .item:hover{background:var(--hover);color:var(--fg)}
+.strip .item .v{color:var(--fg);font-variant-numeric:tabular-nums;font-weight:500}
+.strip .sep{color:var(--fg-3);opacity:.55;font-size:11px;padding:0 1px}
+.strip .live{display:inline-flex;align-items:center;gap:5px}
+
+/* ---- nav ---- */
+.navwrap{flex:none}
+.nav{height:40px;display:flex;align-items:stretch;gap:0;padding:0 max(16px,calc((100% - 960px)/2));border-bottom:1px solid var(--border)}
+.nav button{
+  position:relative;display:inline-flex;align-items:center;gap:6px;
+  padding:0 12px;font-size:13px;line-height:1.4;color:var(--fg-2);
+  transition:color var(--t1) var(--ease);
+}
+.nav button:hover{color:var(--fg)}
+.nav button.on{color:var(--fg);font-weight:600}
+.nav button.on::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:2px;background:var(--fg)}
+.nav .n{font-size:11px;color:var(--fg-3);font-variant-numeric:tabular-nums;font-weight:400}
+.nav .att{width:6px;height:6px;border-radius:50%;background:var(--amber);margin-left:1px}
+
+/* ---- content shells ---- */
+.content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.view{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.scroll{flex:1;min-height:0;overflow-y:auto;padding:12px max(24px,calc((100% - 960px)/2)) 24px}
+.view-foot{
+  flex:none;height:32px;display:flex;align-items:center;gap:10px;
+  padding:0 max(24px,calc((100% - 960px)/2));border-top:1px solid var(--border);
+  font-size:12px;line-height:1.5;color:var(--fg-3);
+}
+.view-foot .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.view-foot .spacer{flex:1}
+.view-foot .keys{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.view-foot .keys .kbd{margin-right:1px}
+
+/* ---- group container + rows ---- */
+.group{border:1px solid var(--border);border-radius:12px;background:var(--layer-1);overflow:hidden}
+.group + .group{margin-top:8px}
+.row{
+  position:relative;display:flex;align-items:center;gap:10px;
+  height:44px;padding:0 8px 0 10px;
+  border-top:1px solid var(--border);border-top:.5px solid var(--border);
+  background:transparent;
+  transition:background var(--t1) var(--ease);
+}
+.group > .row:first-child,.group > .row-wrap:first-child .row{border-top:0}
+.row.two{height:56px}
+.row:hover{background:var(--hover)}
+.row.sel{background:var(--active)}
+.row-wrap + .row-wrap .row{border-top:1px solid var(--border);border-top:.5px solid var(--border)}
+.row-main{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center;gap:1px;overflow:hidden}
+.row-title{
+  font-size:14px;font-weight:500;line-height:1.4;color:var(--fg);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.row-title.done{text-decoration:line-through;text-decoration-color:var(--fg-3);color:var(--fg-3);font-weight:400}
+.row-sub{display:flex;align-items:center;gap:6px;min-width:0;font-size:12px;color:var(--fg-3);line-height:1.5;overflow:hidden}
+.row-sub > span{white-space:nowrap}
+.row-sub > .ellip{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}
+.row-sub .ellip{max-width:100%}
+.row-sub .sepdot{opacity:.5}
+.row-meta{flex:none;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg-3);font-variant-numeric:tabular-nums;margin-left:auto}
+.row-meta .who{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-actions{
+  position:absolute;right:6px;top:0;bottom:0;
+  display:flex;align-items:center;gap:2px;
+  opacity:0;pointer-events:none;
+  transition:opacity var(--t1) var(--ease);
+  background:var(--hover);
+  border-radius:8px;
+}
+.row:hover .row-actions,.row:focus-within .row-actions,.row.force .row-actions,.row-actions.always{opacity:1;pointer-events:auto}
+.row:hover .row-meta,.row:focus-within .row-meta,.row.force .row-meta{visibility:hidden}
+.row:focus-visible .row-actions{opacity:1;pointer-events:auto}
+.mini{
+  height:24px;padding:0 8px;border-radius:8px;
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:12px;color:var(--fg-2);white-space:nowrap;
+  transition:background var(--t1) var(--ease),color var(--t1) var(--ease);
+}
+.mini:hover{background:var(--active);color:var(--fg)}
+.mini.danger:hover{color:var(--red)}
+.row-sel{width:24px;height:24px;flex:none;display:grid;place-items:center;opacity:0;transition:opacity var(--t1) var(--ease)}
+.row:hover .row-sel,.row:focus-within .row-sel,.row.sel .row-sel,.row.force .row-sel{opacity:1}
+input[type="checkbox"]{
+  appearance:none;width:14px;height:14px;flex:none;margin:0;
+  border:1px solid var(--border-strong);border-radius:4px;background:var(--layer-1);
+  display:inline-grid;place-items:center;cursor:pointer;
+  transition:background var(--t1) var(--ease),border-color var(--t1) var(--ease);
+}
+input[type="checkbox"]:checked{background:var(--accent-ink);border-color:var(--accent-ink)}
+input[type="checkbox"]:checked::after{content:"";width:7px;height:4px;border-left:1.5px solid var(--accent-on);border-bottom:1.5px solid var(--accent-on);transform:rotate(-45deg) translateY(-1px)}
+.status{
+  width:28px;height:28px;flex:none;border-radius:4px;
+  display:grid;place-items:center;color:var(--fg-3);
+  transition:background var(--t1) var(--ease),color var(--t1) var(--ease);
+}
+.status:hover{background:var(--active);color:var(--fg-2)}
+.status.doing{color:var(--blue)}
+.status.blocked{color:var(--amber)}
+.status.done{color:var(--green-icon)}
+.dot{width:6px;height:6px;border-radius:50%;flex:none;background:var(--fg-3)}
+.dot.todo{background:transparent;border:1px solid var(--fg-3);box-sizing:border-box}
+.dot.doing{background:var(--blue)}
+.dot.blocked{background:var(--amber)}
+.dot.done{background:var(--green)}
+.dot.closed{background:transparent;border:1px solid var(--fg-3);box-sizing:border-box}
+.dot.starting{background:var(--amber)}
+.dot.failed{background:var(--red)}
+.dot.ok{background:var(--green)}
+.dot.warn{background:var(--amber)}
+.dot.err{background:var(--red)}
+.dot.idle{background:transparent;border:1px solid var(--fg-3);box-sizing:border-box}
+.pulse{position:relative;width:6px;height:6px;flex:none;border-radius:50%;background:var(--blue)}
+.pulse::after{
+  content:"";position:absolute;inset:-3px;border-radius:50%;
+  border:1px solid var(--blue);opacity:.5;
+  animation:pulse 2s var(--ease) infinite;
+}
+.pri{display:inline-flex;align-items:center;gap:4px;flex:none}
+.pri .dot{width:6px;height:6px}
+.pri.high{color:var(--amber-text)}
+.pri.high .dot{background:var(--amber)}
+.badge{
+  display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;
+  border:1px solid var(--border-strong);border-radius:4px;
+  background:var(--layer-2);font-size:11px;line-height:1.4;color:var(--fg-3);white-space:nowrap;flex:none;
+}
+.badge.accent{color:var(--fg-2)}
+.badge.unread{color:var(--fg);border-color:var(--border-strong);background:var(--layer-3);font-weight:500;padding:0 7px}
+.badge .dot{width:5px;height:5px;background:var(--fg-3)}
+.url{font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--fg-2);background:none;border:0;padding:0;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.url:hover{color:var(--fg);text-decoration:underline;text-underline-offset:2px}
+
+/* ---- buttons ---- */
+.btn{
+  height:28px;padding:0 10px;border-radius:8px;
+  border:1px solid var(--border-strong);background:transparent;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  font-size:13px;color:var(--fg-2);white-space:nowrap;
+  transition:background var(--t1) var(--ease),color var(--t1) var(--ease),border-color var(--t1) var(--ease);
+}
+.btn:hover{background:var(--hover);color:var(--fg)}
+.btn:active{background:var(--active)}
+.btn.sm{height:24px;padding:0 8px;font-size:12px;border-radius:8px;gap:4px}
+.btn.lg{height:32px;padding:0 12px;font-size:13px}
+.btn.primary{background:var(--accent-ink);border-color:var(--accent-ink);color:var(--accent-on);font-weight:500}
+.btn.primary:hover{background:var(--accent-ink);color:var(--accent-on);opacity:.9}
+.btn.primary:active{opacity:.82}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--hover)}
+.btn.danger{color:var(--fg-2)}
+.btn.danger:hover{color:var(--red);border-color:var(--border-strong);background:var(--hover)}
+
+/* ---- toolbar / chips / fields ---- */
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 10px}
+.chips{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.chip{
+  height:26px;padding:0 8px;border-radius:8px;border:1px solid transparent;
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--fg-2);white-space:nowrap;
+  transition:background var(--t1) var(--ease),color var(--t1) var(--ease);
+}
+.chip:hover{background:var(--hover);color:var(--fg)}
+.chip.on{background:var(--layer-3);color:var(--fg);border-color:var(--border)}
+.chip .n{font-size:11px;color:var(--fg-3);font-variant-numeric:tabular-nums}
+.chip.on .n{color:var(--fg-2)}
+.ctl{
+  height:28px;padding:0 8px;border-radius:8px;border:1px solid transparent;
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:12px;color:var(--fg-3);white-space:nowrap;
+}
+.ctl:hover{background:var(--hover);color:var(--fg-2)}
+.ctl .ic{color:var(--fg-3)}
+.seg{display:inline-flex;align-items:center;height:28px;padding:2px;border:1px solid var(--border-strong);border-radius:8px;background:var(--layer-2)}
+.seg button{height:22px;padding:0 8px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--fg-3)}
+.seg button:hover{color:var(--fg-2)}
+.seg button.on{background:var(--layer-3);color:var(--fg)}
+.seg button .ic{color:currentColor}
+.btn-row{display:flex;align-items:center;gap:6px}
+.field{position:relative;display:flex;align-items:center;min-width:0}
+.field > .ic{position:absolute;left:9px;color:var(--fg-3);pointer-events:none}
+.input{
+  width:100%;height:32px;padding:0 10px;
+  background:var(--layer-2);border:1px solid var(--border-strong);border-radius:8px;
+  font-size:13px;color:var(--fg);outline:none;
+  transition:border-color var(--t1) var(--ease),box-shadow var(--t1) var(--ease);
+}
+.input::placeholder{color:var(--fg-3)}
+.input:focus{border-color:var(--blue);box-shadow:var(--focus)}
+.field .input{padding-left:30px}
+textarea.input{height:auto;min-height:72px;padding:8px 10px;line-height:1.7;resize:vertical}
+select.input{height:28px;padding:0 6px;font-size:12px;background:var(--layer-1)}
+
+/* ---- quick capture ---- */
+.capture{
+  display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;
+  border:1px solid var(--border-strong);border-radius:8px;background:var(--layer-2);
+  transition:border-color var(--t1) var(--ease),box-shadow var(--t1) var(--ease);
+}
+.capture:focus-within{border-color:var(--blue);box-shadow:var(--focus)}
+.capture .ic{color:var(--fg-3)}
+.capture input{
+  flex:1;min-width:0;height:100%;border:0;background:transparent;outline:none;
+  font-size:13px;color:var(--fg);
+}
+.capture input::placeholder{color:var(--fg-3)}
+.capture .kbd{flex:none}
+
+/* ---- sections ---- */
+.sec{margin-bottom:20px}
+.sec:last-child{margin-bottom:0}
+.sec-hd{display:flex;align-items:center;gap:8px;height:28px;margin-bottom:2px;padding:0 2px}
+.sec-hd h2{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--fg-3);line-height:1.4}
+.sec-hd .more{margin-left:auto;font-size:12px;color:var(--fg-3);display:inline-flex;align-items:center;gap:3px;padding:2px 4px;border-radius:4px}
+.sec-hd .more:hover{color:var(--fg-2);background:var(--hover)}
+.gh{
+  display:flex;width:100%;align-items:center;gap:6px;
+  height:28px;padding:0 4px 0 2px;
+  font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--fg-3);
+}
+.gh:hover{color:var(--fg-2)}
+.gh .chev{color:var(--fg-3);transition:transform var(--t2) var(--ease)}
+.gh.collapsed .chev{transform:rotate(-90deg)}
+.gh .n{margin-left:auto;font-weight:400;letter-spacing:0;font-variant-numeric:tabular-nums;color:var(--fg-3)}
+.att-icon{width:22px;height:22px;flex:none;display:grid;place-items:center;color:var(--fg-deco)}
+.att-row .row-title{font-weight:500}
+.att-row .row-sub .dot{margin-right:1px}
+.att-row .act{margin-left:auto;flex:none;display:flex;align-items:center;gap:2px}
+.att-row .act .go{height:24px;padding:0 6px;display:inline-flex;align-items:center;gap:4px;border-radius:8px;font-size:12px;color:var(--fg-2)}
+.att-row .act .go:hover{background:var(--active);color:var(--fg)}
+.att-row .act .go .ic{color:var(--fg-3)}
+.att-row .row-actions{background:var(--hover)}
+
+/* ---- expanded task ---- */
+.expand{background:var(--layer-2);border-top:1px solid var(--border);padding:12px 14px 14px 56px}
+.ex-title-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.title-edit{
+  flex:1;min-width:0;height:28px;padding:0 8px;margin-left:0;
+  background:var(--bg);border:1px solid var(--border-strong);border-radius:8px;
+  font-size:14px;font-weight:500;color:var(--fg);outline:none;
+}
+.title-edit:hover{border-color:var(--border-strong)}
+.title-edit:focus{border-color:var(--blue);box-shadow:var(--focus);background:var(--bg)}
+.save-state{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--fg-3)}
+.edit-mark{flex:none;color:var(--fg-3)}
+.save-state .ic{color:var(--green-icon)}
+.ex-detail{font-size:13px;line-height:1.7;color:var(--fg-2);max-width:76ch;margin-bottom:10px}
+.run-strip{
+  display:flex;align-items:center;gap:8px;min-height:34px;
+  padding:6px 10px;margin-bottom:10px;
+  border:1px solid var(--border-strong);border-radius:8px;background:var(--bg);
+}
+.run-strip .rs-main{display:flex;align-items:center;gap:6px;min-width:0;font-size:12px;color:var(--fg-2)}
+.run-strip .rs-main .muted{color:var(--fg-3)}
+.run-strip .rs-main .ellip{max-width:38ch}
+.run-strip .btn{margin-left:auto}
+.run-strip .btn + .btn{margin-left:0}
+.ex-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0 2px}
+.ex-notes{margin-top:12px}
+.timeline{position:relative;display:flex;flex-direction:column;padding-left:14px;margin-top:2px}
+.timeline::before{content:"";position:absolute;left:3px;top:5px;bottom:4px;width:1px;background:var(--border-strong)}
+.tl{position:relative;padding:0 0 9px;display:flex;gap:8px;font-size:12px;line-height:1.5;color:var(--fg-3)}
+.tl:last-child{padding-bottom:0}
+.tl::before{content:"";position:absolute;left:-14px;top:5px;width:5px;height:5px;border-radius:50%;background:var(--fg-3);border:1px solid var(--layer-2)}
+.tl .when{flex:none;font-variant-numeric:tabular-nums;color:var(--fg-3)}
+.tl .what{color:var(--fg-2)}
+
+/* ---- footer sync / bulk bar ---- */
+.bulk{
+  flex:none;display:flex;align-items:center;gap:6px;
+  height:40px;padding:0 max(24px,calc((100% - 960px)/2));background:var(--layer-2);border-bottom:1px solid var(--border);
+  font-size:12px;color:var(--fg-2);
+}
+.bulk .n{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums;margin-right:2px}
+.bulk .spacer{flex:1}
+.bulk .mini{height:24px;border:1px solid var(--border-strong);background:var(--layer-1);color:var(--fg-2)}
+.bulk .mini:hover{background:var(--hover);color:var(--fg)}
+.bulk .mini.danger:hover{color:var(--red)}
+.banner{
+  display:flex;align-items:center;gap:8px;
+  min-height:34px;padding:6px 10px;margin-bottom:10px;
+  border:1px solid var(--border-strong);border-radius:8px;
+  background:var(--layer-2);font-size:12px;color:var(--fg-2);
+}
+.banner .ic{color:var(--amber-text)}
+.banner .link{color:var(--fg-2);padding:0 2px}
+.banner .link:hover{color:var(--fg);text-decoration:underline;text-underline-offset:2px}
+.banner .spacer{flex:1}
+.conflict{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:8px 10px;margin:0 0 8px 44px;
+  border:1px solid var(--border-strong);border-radius:8px;background:var(--layer-2);
+  font-size:12px;line-height:1.5;color:var(--fg-2);
+}
+.conflict .ic{color:var(--amber-text)}
+.conflict .cf-main{display:flex;flex-direction:column;gap:1px;min-width:0}
+.conflict .cf-sub{color:var(--fg-3);font-size:11px}
+.conflict .cf-main .t{color:var(--fg)}
+.conflict .btn{margin-left:auto}
+.conflict .btn + .btn{margin-left:0}
+.row.hl{animation:hl 420ms var(--ease)}
+.run-chip{height:18px;gap:5px;color:var(--fg-3)}
+.run-chip .dot{background:var(--fg-3);width:5px;height:5px}
+.stopped{color:var(--fg-3)}
+
+/* ---- empty / templates ---- */
+.empty{padding:34px 12px 28px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+.empty > .ic{color:var(--fg-3)}
+.empty-title{font-size:14px;font-weight:500;color:var(--fg);margin-top:4px}
+.empty-sub{font-size:13px;line-height:1.7;color:var(--fg-3);max-width:42ch}
+.templates{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
+.tpl{height:26px;padding:0 9px;border:1px solid var(--border-strong);border-radius:8px;font-size:12px;color:var(--fg-2);background:var(--layer-1)}
+.tpl:hover{background:var(--hover);color:var(--fg)}
+
+/* ---- board ---- */
+.board-wrap{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.board-head{flex:none;display:flex;align-items:center;gap:8px;padding:10px max(24px,calc((100% - 960px)/2)) 6px}
+.board-head .ttl{font-size:15px;font-weight:600;color:var(--fg)}
+.board-head .cnt{font-size:12px;color:var(--fg-3);font-variant-numeric:tabular-nums}
+.board{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:4px max(24px,calc((100% - 960px)/2)) 24px;align-items:start}
+.col{min-width:0;display:flex;flex-direction:column;gap:6px}
+.col-hd{display:flex;align-items:center;gap:6px;height:26px;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--fg-2)}
+.col-hd .dot{margin-right:1px}
+.col-hd .n{margin-left:auto;font-weight:400;letter-spacing:0;color:var(--fg-3);font-variant-numeric:tabular-nums}
+.board-filters{flex:none;display:flex;align-items:center;gap:12px;padding:0 max(24px,calc((100% - 960px)/2)) 8px;font-size:12px;color:var(--fg-3);white-space:nowrap;overflow:hidden}
+.board-filters .num{color:var(--fg-2);font-variant-numeric:tabular-nums}
+.board-filters .spacer{flex:1}
+.card{
+  position:relative;border:1px solid var(--border-strong);border-radius:12px;background:var(--layer-1);
+  padding:8px 9px;cursor:grab;
+  transition:background var(--t1) var(--ease),border-color var(--t1) var(--ease);
+}
+.card:hover{background:var(--hover);border-color:var(--border-strong)}
+.card:active{cursor:grabbing}
+.card-title{font-size:13px;font-weight:500;line-height:1.4;color:var(--fg);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-title.done{text-decoration:line-through;text-decoration-color:var(--fg-2);text-decoration-thickness:1px;color:var(--fg-3);font-weight:400}
+.card-meta{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;line-height:1.5;color:var(--fg-3);min-width:0}
+.done-check{display:inline-flex;color:var(--green-icon);flex:none}
+.card-meta .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .grip{position:absolute;right:5px;top:6px;color:var(--fg-deco);opacity:0;transition:opacity var(--t1) var(--ease)}
+.card:hover .grip{opacity:.7}
+.card.drop{border-style:dashed;border-color:var(--fg-3);background:var(--layer-2);min-height:44px;display:grid;place-items:center;color:var(--fg-3);font-size:11px;cursor:default}
+.col.done .card-title{color:var(--fg-2)}
+
+/* ---- sessions ---- */
+.sess-row{height:48px}
+.sess-row .row-title{display:flex;align-items:center;gap:6px}
+.sub-list{background:var(--bg);border-top:1px solid var(--border)}
+.subrow{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:8px 10px 8px 34px;border-top:1px solid var(--border);border-top:.5px solid var(--border);
+  transition:background var(--t1) var(--ease);
+}
+.sub-list .subrow:first-child{border-top:0}
+.subrow:hover{background:var(--hover)}
+.subrow:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--blue)}
+.sub-dot{margin-top:5px}
+.sub-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+.sub-title{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;line-height:1.4;color:var(--fg);min-width:0}
+.sub-title .tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sub-state{flex:none;font-size:11px;color:var(--fg-3)}
+.sub-reply{display:flex;align-items:flex-start;gap:6px;min-width:0;font-family:var(--font);font-size:13px;line-height:1.7;color:var(--fg-2)}
+.sub-reply .ic{color:var(--fg-3);margin-top:4px}
+.sub-reply .tx{min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.7}
+.sub-meta{flex:none;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg-3);font-variant-numeric:tabular-nums;margin-left:auto;padding-top:1px}
+.sub-actions{flex:none;display:flex;align-items:center;gap:2px;margin-top:-2px}
+.subrow.closed .sub-title{color:var(--fg-3);text-decoration:line-through;text-decoration-color:var(--fg-3)}
+.composer{display:flex;align-items:center;gap:6px;margin-top:6px}
+.composer .input{height:30px;font-size:12px;border-radius:8px}
+.composer .btn{flex:none}
+.msg-line{display:flex;gap:6px;margin-top:4px;font-size:13px;line-height:1.7;color:var(--fg-2);padding-left:1px}
+.msg-line .who{flex:none;color:var(--fg-3)}
+
+/* ---- settings ---- */
+.settings .scroll{padding-top:10px;padding-bottom:16px;padding-left:max(24px,calc((100% - 960px)/2));padding-right:max(24px,calc((100% - 960px)/2))}
+.page-title{font-size:20px;font-weight:600;line-height:1.4;color:var(--fg)}
+.page-sub{font-size:13px;line-height:1.7;color:var(--fg-3);margin:3px 0 14px}
+.set-sec{margin-bottom:16px}
+.set-sec:last-child{margin-bottom:0}
+.set-hd{display:flex;align-items:center;gap:8px;height:26px;margin-bottom:6px;padding:0 2px}
+.set-hd h2{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--fg-3)}
+.set-hd .hint{margin-left:0}
+.set-hd .spacer{flex:1}
+.rule-row{padding-right:10px}
+.rule-row .rule-ic{color:var(--fg-3);width:20px;height:20px;display:grid;place-items:center;flex:none}
+.rule-path{flex:1;min-width:0;font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--fg-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.rule-path bdi{unicode-bidi:plaintext}
+.rule-bytes{flex:none;font-size:11px;color:var(--fg-3);font-variant-numeric:tabular-nums;width:52px;text-align:right}
+.rule-edit{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--fg-3);width:64px;justify-content:flex-end}
+.rule-edit .ic{color:var(--fg-3)}
+.rule-row.open{background:var(--layer-2);border-bottom:1px solid var(--border)}
+.editor{padding:8px 12px 10px 12px;background:var(--layer-2);border-top:1px solid var(--border)}
+.ed-hd{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;color:var(--fg-3);min-width:0}
+.ed-path{font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--fg-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.saved{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--fg-3);margin-left:auto;flex:none}
+.saved .ic{color:var(--green-icon)}
+.saving{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--fg-3);margin-left:auto;flex:none}
+.saving .sp{width:5px;height:5px;border-radius:50%;background:var(--fg-3)}
+.mono-input{
+  width:100%;min-height:92px;resize:vertical;padding:8px 10px;
+  background:var(--bg);border:1px solid var(--border-strong);border-radius:8px;
+  font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--fg);outline:none;
+  transition:border-color var(--t1) var(--ease),box-shadow var(--t1) var(--ease);
+}
+.mono-input:focus{border-color:var(--blue);box-shadow:var(--focus)}
+.ed-foot{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px;color:var(--fg-3)}
+.skill-row{height:44px}
+.skill-name{flex:none;max-width:220px;font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--fg-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.skill-desc{flex:1;min-width:0;font-size:13px;color:var(--fg-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.skill-face{flex:none;font-size:11px;color:var(--fg-3);width:92px;text-align:right}
+.set-search{max-width:280px;margin-bottom:8px}
+.task-search{width:190px;flex:none}
+.toolbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+
+/* ---- states gallery ---- */
+.gallery{flex:1;min-height:0;overflow-y:auto;padding:14px max(24px,calc((100% - 960px)/2)) 32px}
+.gallery-head{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+.gallery-head .ttl{font-size:15px;font-weight:600;color:var(--fg)}
+.gallery-head .sub{font-size:12px;color:var(--fg-3)}
+.gal-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px}
+.gblock{min-width:0}
+.glabel{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--fg-3)}
+.glabel .n{font-weight:400;letter-spacing:0;color:var(--fg-3);font-variant-numeric:tabular-nums}
+.gbody{border:1px solid var(--border);border-radius:12px;background:var(--layer-1);padding:10px 12px;min-height:64px}
+.gbody.flush{padding:0;overflow:hidden}
+.gbody.dim{color:var(--fg-3)}
+.sk-row{display:flex;align-items:center;gap:10px;height:44px;border-top:1px solid var(--border);border-top:.5px solid var(--border);padding:0 12px}
+.sk-row:first-child{border-top:0}
+.sk{background:var(--layer-3);border-radius:4px;height:8px}
+.sk.circle{width:14px;height:14px;border-radius:50%;flex:none}
+.sk.w1{width:14px}.sk.w2{width:38%}.sk.w3{width:24%}.sk.w4{width:30%}.sk.w5{width:16%}
+.sk-stack{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.offline{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:16px 8px}
+.offline .ic{color:var(--fg-3)}
+.offline .t{font-size:13px;font-weight:500;color:var(--fg)}
+.offline .s{font-size:13px;line-height:1.7;color:var(--fg-3);max-width:36ch}
+.inline-note{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg-2);padding:2px 0}
+.inline-note .ic{color:var(--fg-3)}
+.long-path{font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--fg-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;text-align:left;margin-top:5px}
+.stress-note{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg-2)}
+.stress-note .num{font-variant-numeric:tabular-nums;color:var(--fg)}
+
+/* ---- overlays ---- */
+.overlay{
+  position:absolute;inset:0;z-index:40;
+  background:var(--scrim);
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;
+
+}
+.overlay.palette-overlay{background:var(--scrim);align-items:flex-start;justify-content:center;padding:56px 16px 24px}
+.sheet{
+  width:480px;max-width:100%;max-height:calc(100% - 16px);
+  display:flex;flex-direction:column;
+  background:var(--layer-1);border:1px solid var(--border-strong);border-radius:16px;
+  box-shadow:var(--shadow);
+}
+.sheet:focus{outline:none}
+.sheet-hd{display:flex;align-items:flex-start;gap:8px;padding:14px 14px 0 16px}
+.sheet-title{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.4;color:var(--fg)}
+.sheet-sub{padding:3px 16px 0;font-size:13px;line-height:1.7;color:var(--fg-3)}
+.sheet-body{padding:10px 16px 0;overflow-y:auto}
+.field-label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg-3);margin:12px 0 5px;letter-spacing:.02em}
+.target{
+  display:flex;align-items:center;gap:9px;width:100%;
+  padding:8px 10px;margin-top:6px;
+  border:1px solid var(--border-strong);border-radius:8px;background:var(--layer-1);
+  cursor:pointer;text-align:left;
+  transition:background var(--t1) var(--ease),border-color var(--t1) var(--ease);
+}
+.target:hover{background:var(--hover)}
+.target.on{border-color:var(--fg-3);background:var(--layer-2)}
+.target .radio{width:14px;height:14px;flex:none;border-radius:50%;border:1px solid var(--fg-3);display:grid;place-items:center}
+.target.on .radio{border-color:var(--accent-ink)}
+.target.on .radio::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent-ink)}
+.target-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+.target-title{font-size:13px;font-weight:500;color:var(--fg)}
+.target-sub{font-size:11px;line-height:1.5;color:var(--fg-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.target select{flex:none;max-width:180px}
+.target.off{opacity:.55}
+.sheet .check{display:flex;align-items:center;gap:7px;margin:12px 0 0;font-size:12px;color:var(--fg-2);cursor:pointer}
+.sheet-foot{
+  display:flex;align-items:center;gap:6px;
+  padding:11px 16px 13px;margin-top:14px;border-top:1px solid var(--border);
+}
+.sheet-foot .hint{display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:11px;color:var(--fg-3)}
+.sheet-foot .hint .kbd{min-width:14px;height:15px}
+.sheet-foot .spacer{flex:1}
+.palette{
+  width:560px;max-width:100%;
+  display:flex;flex-direction:column;
+  background:var(--layer-1);border:1px solid var(--border-strong);border-radius:16px;
+  box-shadow:var(--shadow);overflow:hidden;
+
+}
+.pal-input{flex:none;display:flex;align-items:center;gap:9px;height:46px;padding:0 14px;border-bottom:1px solid var(--border)}
+.pal-input .ic{color:var(--fg-3)}
+.pal-input input{flex:1;min-width:0;height:100%;border:0;background:transparent;outline:none;font-size:13px;color:var(--fg)}
+.pal-input input::placeholder{color:var(--fg-3)}
+.pal-input input:focus-visible{outline:2px solid var(--blue);outline-offset:-2px;border-radius:4px}
+.pal-input .kbd{flex:none}
+.pal-list{flex:1;min-height:0;max-height:min(540px,62vh);overflow-y:auto;padding:5px 6px 7px}
+.pal-group{font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--fg-3);padding:8px 8px 4px}
+.pal-row{
+  display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;border-radius:8px;
+  font-size:13px;color:var(--fg-2);cursor:pointer;min-width:0;
+}
+.pal-row .ic{color:var(--fg-3)}
+.pal-row .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pal-row .rt{margin-left:auto;flex:none;font-size:11px;color:var(--fg-3)}
+.pal-row.on{background:var(--active);color:var(--fg)}
+.pal-row.on .ic{color:var(--fg-2)}
+.pal-empty{padding:22px 10px;text-align:center;font-size:12px;color:var(--fg-3)}
+.pal-foot{
+  flex:none;display:flex;align-items:center;gap:12px;height:34px;padding:0 12px;
+  border-top:1px solid var(--border);background:var(--layer-2);
+  font-size:11px;color:var(--fg-3);
+}
+.pal-foot .g{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.pal-foot .g .kbd{min-width:14px;height:15px}
+.pal-foot .spacer{flex:1}
+
+/* ---- menu / popover / toast ---- */
+.menu{
+  position:absolute;z-index:70;min-width:186px;max-width:250px;
+  background:var(--layer-2);border:1px solid var(--border-strong);border-radius:12px;
+  box-shadow:var(--shadow);padding:5px;
+
+}
+.menu-hd{font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--fg-3);padding:5px 8px 4px}
+.menu-item{display:flex;align-items:center;gap:8px;width:100%;height:30px;padding:0 8px;border-radius:8px;font-size:13px;color:var(--fg-2)}
+.menu-item:hover{background:var(--hover);color:var(--fg)}
+.menu-item .ic{color:var(--fg-3)}
+.menu-item .hint{margin-left:auto;font-size:11px;color:var(--fg-3);flex:none}
+.menu-sep{height:1px;background:var(--border);margin:5px 4px}
+.pop{
+  position:absolute;z-index:70;top:96px;right:16px;width:372px;max-width:calc(100% - 32px);
+  background:var(--layer-2);border:1px solid var(--border-strong);border-radius:12px;
+  box-shadow:var(--shadow);padding:6px;
+
+}
+.pop-hd{display:flex;align-items:center;gap:6px;padding:5px 8px 6px;font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--fg-3)}
+.pop-hd .spacer{flex:1}
+.pop-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px}
+.pop-row:hover{background:var(--hover)}
+.pop-row .pr-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+.pop-row .pr-name{font-size:12px;color:var(--fg);display:flex;align-items:center;gap:6px;min-width:0}
+.pop-row .pr-name .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pop-row .pr-url{font-family:var(--mono);font-size:11px;color:var(--fg-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pop-row .btn{flex:none}
+.pop-foot{border-top:1px solid var(--border);margin-top:4px;padding:6px 4px 2px}
+.pop-foot .menu-item{height:26px;font-size:12px}
+.toasts{
+  position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:90;
+  display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;
+  width:max-content;max-width:calc(100% - 48px);
+}
+.toast{
+  pointer-events:auto;display:flex;align-items:center;gap:10px;
+  min-height:36px;padding:7px 10px 7px 12px;
+  background:var(--toast-bg);color:var(--fg);border:1px solid var(--border-strong);border-radius:12px;
+  box-shadow:var(--shadow);font-size:13px;line-height:1.5;
+}
+.toast .t-act{flex:none;color:var(--fg);font-size:12px;padding:2px 4px;border-radius:4px;text-decoration:underline;text-underline-offset:2px}
+.toast .t-act:hover{text-decoration:underline}
+.toast .t-ic{color:var(--fg-2);flex:none}
+.toast.error{color:var(--red)}
+.toast.error .t-ic{color:var(--red)}
+.toasts .spacer{flex:none}
+
+/* ---- animations ---- */
+@keyframes pulse{0%{transform:scale(.7);opacity:.6}70%{transform:scale(1.5);opacity:0}100%{transform:scale(1.5);opacity:0}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.98) translateY(-2px)}to{opacity:1;transform:none}}
+@keyframes toast-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes reveal{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
+@keyframes hl{0%{background:var(--active)}100%{background:transparent}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0ms!important;animation-iteration-count:1!important;transition-duration:0ms!important}
+  .pulse::after{animation:none;opacity:.4}
+}
+
+
+/* ---- v2 additions (lead spec pass) ---- */
+.row-actions.static{position:static;margin-left:6px;padding-left:2px;background:transparent;opacity:1;pointer-events:auto;flex:none}
+.row.always-actions:hover .row-meta,.row.always-actions:focus-within .row-meta{visibility:visible}
+.env-row{height:48px}
+.capture-detail{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-top:6px;border:1px solid var(--border);border-radius:8px;background:var(--layer-2);font-size:12px;color:var(--fg-3);flex-wrap:wrap}
+.capture-detail select{height:26px;border:1px solid var(--border-strong);border-radius:8px;background:var(--layer-1);color:var(--fg-2);font-size:12px;padding:0 6px}
+.capture-detail .spacer{flex:1}
+.sess-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.sess-toolbar .field{width:190px;margin-left:auto}
+.sess-search{}
+.set-hd .btn{flex:none}
+.skill-row .badge{flex:none}
+.col-hint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet .target-select{flex:none;max-width:180px}
+@media (max-width:900px){
+  .row.always-actions .row-meta{visibility:hidden}
+  .sess-toolbar .field{width:100%;margin-left:0}
+  .row-actions.static .mini{display:inline-flex}
+  .row-actions.static{display:none}
+  .row.always-actions{padding-right:8px}
+  .att-row .act .go .ic{display:none}
+}
+
+
+/* ---- delta pass: switcher, env phases, session toggle, settings dirty ---- */
+.ws-switch{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px;border-radius:4px;font-size:12px;font-weight:400;color:var(--fg-3);border:1px solid transparent;margin-left:2px}
+.ws-switch:hover{background:var(--hover);color:var(--fg-2);border-color:var(--border)}
+.ws-switch .ic{color:var(--fg-3)}
+.ws-check{margin-left:auto;color:var(--fg-2)}
+.env-row.failed{height:auto;min-height:58px;padding:7px 8px 7px 10px;align-items:flex-start}
+.env-row.failed .dot{margin-top:6px}
+.env-error{font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.env-error .e1{color:var(--fg-2)}
+.env-row .row-main{gap:1px}
+.env-actions{display:flex;align-items:center;gap:2px;flex:none;margin-left:6px}
+.env-actions .mini{height:24px}
+.server-state{display:inline-flex;align-items:center;gap:4px}
+.flip{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 4px;border-radius:4px;font-size:12px;color:var(--fg-3);cursor:pointer;user-select:none}
+.flip input{width:26px;height:14px;border-radius:8px;position:relative;background:var(--layer-3);transition:background var(--t1) var(--ease)}
+.flip input:checked{background:var(--accent-ink)}
+.flip input::after{content:"";position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;background:var(--bg);transition:transform var(--t1) var(--ease)}
+.flip input:checked::after{transform:translateX(12px)}
+.sess-closed-toggle{margin-left:auto}
+.editor-conflict{display:flex;align-items:center;gap:8px;margin:0 0 8px;padding:6px 8px;border:1px solid var(--border-strong);border-radius:8px;background:var(--bg);font-size:12px;color:var(--fg-2)}
+.editor-conflict .ic{color:var(--amber-text)}
+.editor-conflict .spacer{flex:1}
+.dirty{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--fg-3);margin-left:auto;flex:none}
+.dirty .dot{background:var(--amber)}
+.kbd-hint{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--fg-3)}
+.sessions-note{font-size:12px;color:var(--fg-3);display:flex;align-items:center;gap:6px}
+@media (max-width:900px){
+  .row-actions.static{display:flex}
+  .row-actions.static .mini{display:none}
+  .sess-toolbar .field{width:100%;margin-left:0}
+  .sess-closed-toggle{margin-left:0}
+  .scroll{padding:12px 16px 24px}
+  .view-foot,.bulk,.board-head,.board,.gallery{padding-left:16px;padding-right:16px}
+  .settings .scroll{padding-left:16px;padding-right:16px}
+}
+
+
+/* ---- delta pass 2: settings columns, title edit, board ---- */
+.set-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.set-cols .set-sec{margin-bottom:0;min-width:0}
+.set-cols .editor{padding-left:12px}
+.set-cols .skill-row{height:auto;min-height:42px;padding:6px 10px;flex-wrap:wrap;gap:2px 6px}
+.set-cols .skill-face{display:none}
+.set-cols .skill-row .icon-btn{display:none}
+.set-cols .ed-foot{margin-top:4px}
+.set-cols .skill-desc{flex-basis:100%;font-size:12px}
+.set-cols .rule-row{padding-right:10px}
+.set-cols .set-search{max-width:none}
+.ctx-ta{min-height:92px !important}
+.rule-ta{min-height:84px !important}
+@media (max-width:900px){
+  .set-cols{grid-template-columns:1fr;gap:16px}
+}
+
+
+@media (max-width:900px){
+  .rule-src{display:none}
+  .board-filters > span:last-child{display:none}
+}
+@media (max-width:700px){
+  .bulk{height:auto;min-height:40px;flex-wrap:wrap;padding:6px 16px}
+  .board-filters{flex-wrap:wrap;white-space:normal}
+  .env-row{height:auto;min-height:48px;flex-wrap:wrap;padding:6px 10px}
+  .env-row .url{order:3;flex-basis:100%;max-width:100%}
+  .env-row .row-actions.static{margin-left:auto}
+  .status-strip{overflow:hidden}
+}
+
+
+@media (max-width:640px){
+  .hub-name{display:none}
+  .task-search{width:auto;flex:1;min-width:140px}
+  .hd .key-btn{display:none}
+  .view-foot .keys{display:none}
+  .row.force .row-sel{opacity:0}
+  .row.force .row-meta{visibility:visible}
+  .att-row .row-sub .dot{display:none}
+}
+
+
+@media (max-width:900px){
+  .ctx-ta{min-height:128px !important}
+  .sess-toolbar .field{width:auto;flex:1;min-width:110px}
+  .sess-toolbar .btn{flex:none}
+}
+@media (max-width:640px){
+  .chips .chip[data-filter="cancelled"]{display:none}
+  .env-error{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+}
+
+/* ---- narrow ---- */
+@media (max-width:900px){
+  .app{padding:0}
+  .panel{width:100%;height:100vh;min-height:0;border:0;border-radius:0}
+  .hd{padding:0 16px;gap:10px}
+  .hd-path{display:none}
+  .hd-ws{display:none}
+  .sync{padding:0 2px}
+  .sync .sync-text{display:none}
+  .strip{padding:0 16px;gap:0}
+  .nav{padding:0 6px}
+  .scroll{padding:12px 16px 24px}
+  .view-foot{padding:0 16px}
+  .bulk{padding:0 16px}
+  .board-head{padding:10px 16px 6px}
+  .board{grid-template-columns:1fr;gap:16px;padding:4px 16px 24px}
+  .gallery{padding:12px 16px 24px}
+  .gal-grid{grid-template-columns:1fr;gap:14px}
+  .row-meta{display:none}
+  .row[data-kind="task"] .row-meta{display:flex;flex-basis:100%;order:6;margin-left:38px;margin-top:1px;font-size:11px;gap:6px}
+  .row[data-kind="task"]{height:auto;min-height:44px;flex-wrap:wrap;padding-top:6px;padding-bottom:6px}
+  .row[data-kind="task"].two{height:auto;min-height:56px}
+  .row[data-kind="task"] .row-actions{top:6px;bottom:auto}
+  .row-actions .mini{display:none}
+  .att-row .act .go{padding:0 4px}
+  .att-row .act .go span{display:none}
+  .expand{padding-left:14px}
+  .conflict{margin-left:0}
+  .skill-face{display:none}
+  .rule-bytes{width:44px}
+  .sheet-foot .hint{display:none}
+  .overlay{padding:12px}
+  .overlay.palette-overlay{padding:16px}
+  .pop{right:8px;width:calc(100% - 16px)}
+}
+@media (max-width:640px){
+  .hd .key-btn span{display:none}
+  .hd .key-btn{width:28px;padding:0;justify-content:center}
+  .theme-seg button{width:20px}
+  .strip .item{padding:0 4px;font-size:12px}
+  .chip{padding:0 6px}
+  .toolbar .ctl{display:none}
+  .set-hd .hint{display:none}
+  .rule-edit{width:auto}
+  .target{flex-wrap:wrap}
+  .target select{max-width:none;width:100%;margin-top:2px}
+  .sheet-foot .btn{flex:1}
+  .pal-foot .ws{display:none}
+  .sec-hd h2{font-size:11px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel" id="panel">
+    <header class="hd" id="hd"></header>
+    <div class="strip" id="strip"></div>
+    <div class="navwrap" id="navwrap"></div>
+    <main class="content" id="content"></main>
+    <div class="menu" id="menu" hidden></div>
+    <div class="pop" id="pop" hidden></div>
+    <div id="overlay-root"></div>
+    <div class="toasts" id="toasts"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   小工具
+   ============================================================ */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const esc = (s = "") => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ROUTES = ["now","now-light","tasks","tasks-selected","tasks-expanded","board","dispatch","sessions","sessions-closed","settings","states","palette"];
+const FORCED_LIGHT = new Set(["settings","now-light"]);
+
+const ICONS = {
+  layers:'<path d="M12 3 21 8l-9 5-9-5Z"/><path d="M3 12l9 5 9-5"/><path d="M3 16l9 5 9-5"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  tasks:'<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 3 3 5-6"/>',
+  list:'<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1" fill="currentColor" stroke="none"/>',
+  board:'<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/>',
+  chat:'<path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.6 8.6 0 0 1-2.5-.4L4 21l1.3-4A7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  command:'<path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3Z"/>',
+  more:'<circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  play:'<path d="M8 5.4v13.2L18.4 12Z"/>',
+  stop:'<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  chevronRight:'<path d="m9 6 6 6-6 6"/>',
+  chevronDown:'<path d="m6 9 6 6 6-6"/>',
+  close:'<path d="M6 6l12 12M18 6 6 18"/>',
+  arrowLeft:'<path d="M19 12H5M11 18l-6-6 6-6"/>',
+  arrowRight:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+  arrowUpRight:'<path d="M7 17 17 7M9 7h8v8"/>',
+  external:'<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.4l3.4 2"/>',
+  ban:'<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>',
+  checkCircle:'<circle cx="12" cy="12" r="8.5"/><path d="m8.5 12 2.4 2.4 4.6-5"/>',
+  alert:'<path d="M12 4 2.9 20h18.2Z"/><path d="M12 10v4.2M12 17.3h.01"/>',
+  inbox:'<path d="M4 13h4l1.5 3h5L16 13h4"/><path d="M5.6 5h12.8l2.6 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5Z"/>',
+  server:'<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
+  refresh:'<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/>',
+  monitor:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  grip:'<circle cx="9" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1" fill="currentColor" stroke="none"/>',
+  file:'<path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M13 3v6h7"/>',
+  lock:'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  quote:'<path d="M10 7H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2v1a3 3 0 0 1-3 3"/><path d="M20 7h-4a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2v1a3 3 0 0 1-3 3"/>',
+  wifiOff:'<path d="M2 8.8a16 16 0 0 1 20 0"/><path d="M5 12.6a11 11 0 0 1 14 0"/><path d="M8.5 16.3a6 6 0 0 1 7 0"/><path d="M12 20h.01"/><path d="M2 2l20 20"/>',
+  stack:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+  dot:'<circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>'
+};
+function icon(name, size = 16){
+  const body = ICONS[name] || ICONS.dot;
+  return '<svg class="ic" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+body+'</svg>';
+}
+
+/* ============================================================
+   模拟数据
+   ============================================================ */
+const TASK_SEED = [
+  {id:"t1", title:"修复暗色外观下的浮层残留", status:"blocked", prio:"high", owner:"会话「修复暗色浮层」", updated:"12 分钟前",
+   detail:"暗色主题下浮层关闭后残留 1px 描边，并在 1080px 宽度下出现 60ms 的残影。需要先确认层级方案，再统一清理 popover 的 outline。",
+   notes:[
+     {when:"昨天 18:40", what:"你 创建了任务，标注为高优先级"},
+     {when:"昨天 19:02", what:"会话「修复暗色浮层」复现了 1080px 下的残影"},
+     {when:"今天 09:12", what:"阻塞：等待浮层层级方案确认"}
+   ]},
+  {id:"t2", title:"把会话摘要写回任务板", status:"done", prio:"normal", owner:"你", updated:"昨天 18:20"},
+  {id:"t3", title:"统一 revision 冲突提示", status:"doing", prio:"high", owner:"会话「修复暗色浮层」", updated:"3 分钟前",
+   run:{elapsed:"2 分钟", short:"2m", activity:"补了冲突分支的单元测试", session:"修复暗色浮层"},
+   detail:"写操作返回 409 时，当前只弹通用错误并把整页置为 busy。改为行内提示「已被「修复暗色浮层」更新」，提供「采用最新」「重试我的修改」两个出口，不整页刷新。",
+   notes:[
+     {when:"今天 10:42", what:"你 创建了任务，标注为高优先级"},
+     {when:"今天 10:58", what:"会话「修复暗色浮层」开始执行，先复现 409 时的整页刷新"},
+     {when:"今天 11:07", what:"已补冲突分支单测，正在改行内提示"}
+   ]},
+  {id:"t4", title:"补充任务派发的空状态文案", status:"todo", prio:"low", owner:"无人", updated:"1 小时前"},
+  {id:"t5", title:"为会话通知增加未读标记", status:"doing", prio:"normal", owner:"子会话「未读标记接口」", updated:"6 分钟前",
+   run:{elapsed:"6 分钟", short:"6m", activity:"正在改 sessions 列表的未读字段", session:"未读标记接口"}},
+  {id:"t6", title:"整理工作区路径的展示规则", status:"todo", prio:"normal", owner:"会话「整理路径规则」", updated:"2 小时前"},
+  {id:"t7", title:"检查 worktree 切换后的任务归属", status:"doing", prio:"normal", owner:"会话「worktree 归属排查」", updated:"34 分钟前",
+   run:{elapsed:"34 分钟", short:"34m", activity:"34 分钟前 · 等待输出", session:"worktree 归属排查"}},
+  {id:"t8", title:"归档 7 月之前的子会话", status:"todo", prio:"low", owner:"无人", updated:"昨天 16:02"},
+  {id:"t9", title:"验证服务器自动识别在 monorepo 的表现", status:"done", prio:"normal", owner:"你", updated:"昨天 11:34"},
+  {id:"t10", title:"中枢快速捕获交互", status:"todo", prio:"normal", owner:"无人", updated:"昨天 09:40"},
+  {id:"t11", title:"服务器胶囊错误态", status:"done", prio:"low", owner:"你", updated:"10 月 20 日"},
+  {id:"t12", title:"技能新建表单校验", status:"todo", prio:"high", owner:"无人", updated:"10 月 20 日"}
+];
+
+const SESSION_SEED = [
+  {id:"s1", title:"整理工作区路径的展示规则", status:"running", current:true, updated:"3 分钟前", relatedTasks:3, subchats:[
+    {id:"sc1", title:"路径截断规则", status:"running", updated:"1 分钟前", reply:"正在对比 980px 与 1080px 下的截断位置"},
+    {id:"sc2", title:"路径展示评审", status:"idle", updated:"昨天 18:20", unread:2, reply:"建议路径尾部保留仓库名，前面用上级目录缩写"},
+    {id:"sc3", title:"工作区标题文案", status:"closed", updated:"昨天 14:05", reply:"文案已合并到 draft 分支"}
+  ]},
+  {id:"s2", title:"修复暗色浮层", status:"idle", updated:"昨天 19:41", relatedTasks:2, subchats:[
+    {id:"sc4", title:"浮层层级排查", status:"idle", updated:"昨天 19:41", reply:"确认残留来自 popover 的 outline 未清理"},
+    {id:"sc5", title:"暗色对比度巡检", status:"closed", updated:"昨天 16:22", reply:"已列出 6 处低于 4.5:1 的元数据文本"}
+  ]},
+  {id:"s3", title:"中枢重构", status:"running", updated:"12 分钟前", relatedTasks:2, subchats:[
+    {id:"sc6", title:"导航重构评审", status:"running", updated:"12 分钟前", unread:2, reply:"顶部分段控件在 900px 宽时计数挤压标题"},
+    {id:"sc7", title:"派发流程评审", status:"idle", updated:"昨天 17:05", reply:"三个目标选项已经收敛，等待文案确认"}
+  ]},
+  {id:"s4", title:"归档 7 月之前的子会话", status:"closed", updated:"昨天 16:02", relatedTasks:1, subchats:[
+    {id:"sc8", title:"归档脚本", status:"closed", updated:"昨天 15:48", reply:"脚本已合并，旧会话归档完成，等待任务确认"}
+  ]}
+];
+
+const SERVER_SEED = [
+  {id:"srv1", name:"dsh-plugins dev", kind:"vite", port:5173, url:"http://localhost:5173", phase:"ready", required:true},
+  {id:"srv2", name:"docs preview", kind:"vite preview", port:4173, url:"http://localhost:4173", phase:"starting", startedSec:3, required:false},
+  {id:"srv3", name:"design preview", kind:"vite preview", port:4174, url:"http://localhost:4174", phase:"failed", required:false,
+   error:["Error: listen EADDRINUSE: address already in use :::4174","    at Server.setupListenHandle (node:net:1919:16)","    at listenInCluster (node:net:1977:12)"]}
+];
+
+const ATTENTION = [
+  {kind:"ban", icon:"ban", task:"t1", title:"修复暗色外观下的浮层残留", reason:"阻塞 · 等待确认浮层的层级方案", action:"打开任务", act:"attn-open"},
+  {kind:"warn", icon:"clock", task:"t7", title:"检查 worktree 切换后的任务归属", reason:"可能卡住 · 执行者已空闲 34 分钟，没有新活动", action:"放回队列", act:"attn-requeue"},
+  {kind:"ok", icon:"checkCircle", task:"t8", title:"归档 7 月之前的子会话", reason:"执行结束待确认 · 子会话「归档脚本」已结束，任务未完成", action:"确认完成", act:"attn-done"},
+  {kind:"unread", icon:"chat", session:"s3", title:"中枢重构", reason:"子会话未读 · 「导航重构评审」有 2 条新回复", action:"查看", act:"attn-open-session"},
+  {kind:"warn", icon:"server", server:"srv3", title:"design preview", reason:"环境 · 启动超时（EADDRINUSE），已重试 1 次", action:"查看日志", act:"attn-log"}
+];
+
+const RUNNING = [
+  {task:"t3", title:"统一 revision 冲突提示", who:"会话「修复暗色浮层」", elapsed:"2 分钟", activity:"补了冲突分支的单元测试"},
+  {task:"t5", title:"为会话通知增加未读标记", who:"子会话「未读标记接口」", elapsed:"6 分钟", activity:"正在改 sessions 列表的未读字段"},
+  {task:"t7", title:"检查 worktree 切换后的任务归属", who:"会话「worktree 归属排查」", elapsed:"34 分钟", activity:"34 分钟前 · 等待输出"}
+];
+
+const RULES = [
+  {path:"~/.dsh/AGENTS.md", src:"用户全局", bytes:"2.4 KB", editable:false},
+  {path:"~/Projects/snippets/zvid/dsh-plugins/AGENTS.md", src:"项目根", bytes:"6.1 KB", editable:true},
+  {path:"~/Projects/snippets/zvid/dsh-plugins/packages/hub/AGENTS.md", src:"当前目录", bytes:"1.2 KB", editable:true, open:true,
+   content:"# 中枢页面规则\n- 面板内边距 24px，行高 44/56px\n- 浮层只用于派发、命令面板、环境详情\n- 写操作乐观更新，冲突就地解决\n"},
+  {path:"~/Projects/snippets/zvid/dsh-plugins/lib/AGENTS.md", src:"当前目录", bytes:"880 B", editable:true}
+];
+
+const SKILLS = [
+  {name:"hub-craft-review", src:"用户", desc:"按 OpenDesign checklist 评审工作区原型", face:"模型 / 用户"},
+  {name:"workspace-audit", src:"工作区", desc:"检查四个视图的状态覆盖与键盘闭环", face:"模型"},
+  {name:"task-dispatch", src:"用户", desc:"把任务派发给会话，并回写执行摘要", face:"模型 / 用户"}
+];
+
+const CONTEXT_DOC = "# 中枢上下文\n面板位于 client.js，原型在 docs/redesign/prototype。\n写操作乐观更新，删除走 6 秒撤销窗口。\n会话上下文只注入同目录会话，下一轮生效。";
+
+/* ============================================================
+   状态
+   ============================================================ */
+function loadTheme(){
+  try{
+    const v = localStorage.getItem("dsh-hub-proto:theme");
+    if(v === "light" || v === "dark" || v === "system") return v;
+  }catch(e){}
+  return "dark";
+}
+const state = {
+  route:"now",
+  themePref: loadTheme(),
+  themeOverride:null,
+  tasks: TASK_SEED.map(t => ({...t})),
+  sessions: SESSION_SEED.map(s => ({...s, subchats:s.subchats.map(c => ({...c}))})),
+  servers: SERVER_SEED.map(s => ({...s})),
+  filter:"all",
+  selected:new Set(),
+  collapsed:new Set(["done"]),
+  expanded:new Set(),
+  expandedSessions:new Set(["s1"]),
+  sessionFilter:"all",
+  sessionQuery:"",
+  showClosed:false,
+  captureDetail:false,
+  ruleDirty:true,
+  replyDrafts:{},
+  subMessages:{},
+  captureDraft:"",
+  taskQuery:"",
+  highlightId:null,
+  demo:null,
+  focusRow:0,
+  palette:{open:false, query:"", index:0},
+  returnFocusSel:null,
+  sheet:{open:false, taskId:"t1", target:2, note:"", openAfter:true, existing:"s1"},
+  envPop:false,
+  menu:null,
+  toasts:[],
+  staleBanner:false,
+  titleEditing:"t3"
+};
+
+const taskById = id => state.tasks.find(t => t.id === id);
+const sessionById = id => state.sessions.find(s => s.id === id);
+const serverById = id => state.servers.find(s => s.id === id);
+const counts = () => {
+  if(state.demo === "empty") return {all:0, todo:0, doing:0, blocked:0, done:0, cancelled:0};
+  return {
+  all: state.tasks.length,
+  todo: state.tasks.filter(t => t.status === "todo").length,
+  doing: state.tasks.filter(t => t.status === "doing").length,
+  blocked: state.tasks.filter(t => t.status === "blocked").length,
+  done: state.tasks.filter(t => t.status === "done").length,
+  cancelled: state.tasks.filter(t => t.status === "cancelled").length
+  };
+};
+const isServerReady = s => s.phase === "ready";
+const serverCounts = () => {
+  const req = state.servers.filter(s => s.required);
+  const ready = req.filter(isServerReady).length;
+  return {ready, total:req.length};
+};
+const phaseLabel = s => s.phase === "ready" ? "就绪" : s.phase === "starting" ? "启动中" : s.phase === "failed" ? "启动超时" : "已停止";
+const phaseDot = s => s.phase === "ready" ? "ok" : s.phase === "starting" ? "starting" : s.phase === "failed" ? "failed" : "idle";
+const unreadOf = s => s.subchats.some(c => c.unread);
+const sessionStatusLabel = s => s.status === "running" ? "运行中" : s.status === "closed" ? "已关闭" : "空闲";
+
+function effectiveTheme(){
+  if(state.themeOverride) return state.themeOverride;
+  if(state.themePref === "system"){
+    try{ return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; }
+    catch(e){ return "dark"; }
+  }
+  return state.themePref;
+}
+function applyTheme(){
+  document.documentElement.dataset.theme = effectiveTheme();
+}
+function setThemePref(pref){
+  state.themePref = pref;
+  state.themeOverride = null;
+  try{ localStorage.setItem("dsh-hub-proto:theme", pref); }catch(e){}
+  render();
+}
+
+/* ============================================================
+   渲染：外壳
+   ============================================================ */
+const panelEl = $("#panel"), hdEl = $("#hd"), stripEl = $("#strip"), navEl = $("#navwrap"),
+      contentEl = $("#content"), menuEl = $("#menu"), popEl = $("#pop"),
+      overlayEl = $("#overlay-root"), toastsEl = $("#toasts");
+
+ICONS.circle = '<circle cx="12" cy="12" r="8.5"/>';
+ICONS.progress = '<circle cx="12" cy="12" r="8.5" stroke-width="2" stroke-dasharray="40 14" transform="rotate(-90 12 12)"/>';
+
+function themeSegHTML(){
+  const active = state.themeOverride ? state.themeOverride : state.themePref;
+  const opts = [
+    ["system","monitor","跟随系统"],
+    ["light","sun","亮色"],
+    ["dark","moon","暗色"]
+  ];
+  return '<div class="theme-seg" role="group" aria-label="主题">' + opts.map(([v,ic,label]) =>
+    `<button data-act="theme" data-theme="${v}" class="${active===v?'on':''}" aria-pressed="${active===v}" aria-label="${label}" title="${label}">${icon(ic,14)}</button>`
+  ).join("") + '</div>';
+}
+
+function headerHTML(route){
+  if(route === "settings"){
+    return '<button class="back" data-act="nav" data-route="now">' + icon("arrowLeft",15) + '<span>工作区中枢</span></button>'
+      + '<div class="hd-right">' + themeSegHTML() + '</div>';
+  }
+  return '<div class="glyph">' + icon("layers",15) + '</div>'
+    + '<div class="hd-id">'
+      + '<div class="hd-title"><span class="hub-name">工作区中枢</span><button class="ws-switch" data-act="ws-menu" aria-haspopup="menu" aria-label="切换工作区">dsh-plugins ' + icon("chevronDown",12) + '</button></div>'
+      + '<div class="hd-path"><span class="p" title="~/Projects/snippets/zvid/dsh-plugins">~/Projects/snippets/zvid/dsh-plugins</span>'
+      + '<button class="icon-btn xs" data-act="copy-path" aria-label="复制工作区路径" title="复制路径">' + icon("copy",12) + '</button></div>'
+    + '</div>'
+    + '<div class="hd-right">'
+      + '<button class="sync' + (state.demo==="stale"?" warn":"") + '" data-act="refresh" title="' + (state.demo==="stale" ? "同步中断 · 点击重试" : "更新于 3 秒前 · 点击刷新") + '">' + icon("refresh",12) + '<span class="sync-text">' + (state.demo==="stale" ? "同步中断 · 重试" : "更新于 3 秒前") + '</span></button>'
+      + '<button class="icon-btn" data-act="demo-menu" aria-label="演示状态菜单" title="演示状态">' + icon("more",16) + '</button>'
+      + themeSegHTML()
+      + '<button class="key-btn" data-act="palette-open" aria-label="打开命令面板 ⌘K">' + icon("command",13) + '<span>⌘K</span></button>'
+      + '<button class="icon-btn" data-act="nav" data-route="settings" aria-label="工作区设置" title="设置">' + icon("gear",16) + '</button>'
+    + '</div>';
+}
+
+function statusHTML(){
+  const c = counts(), env = serverCounts();
+  return '<button class="item" data-act="goto-filter" data-filter="doing">进行中 <span class="v num">' + c.doing + '</span></button><span class="sep">·</span>'
+    + '<button class="item" data-act="goto-filter" data-filter="todo">待办 <span class="v num">' + c.todo + '</span></button><span class="sep">·</span>'
+    + '<button class="item" data-act="goto-filter" data-filter="blocked">阻塞 <span class="v num">' + c.blocked + '</span></button><span class="sep">·</span>'
+    + '<button class="item" data-act="env-pop" aria-haspopup="dialog">环境 <span class="v num">' + env.ready + '/' + env.total + '</span></button>';
+}
+
+function navHTML(route){
+  const tasksOn = ["tasks","tasks-selected","tasks-expanded","board","dispatch"].includes(route);
+  const sessionsOn = route === "sessions" || route === "sessions-closed";
+  const nowOn = ["now","now-light","palette"].includes(route);
+  return '<nav class="nav" aria-label="主导航">'
+    + `<button class="${nowOn?'on':''}" data-act="nav" data-route="now">概览${ATTENTION.length?'<span class="att" aria-hidden="true"></span><span class="n num">'+ATTENTION.length+'</span>':''}</button>`
+    + `<button class="${tasksOn?'on':''}" data-act="nav" data-route="tasks">任务 <span class="n num">${counts().all}</span></button>`
+    + `<button class="${sessionsOn?'on':''}" data-act="nav" data-route="sessions">对话 <span class="n num">4</span></button>`
+    + '</nav>';
+}
+
+/* ============================================================
+   渲染：概览
+   ============================================================ */
+function viewNow(){
+  const stripNote = '<div class="view"><div class="scroll now-view" style="padding-top:14px;padding-bottom:0">'
+    + sectionAttention() + sectionRunning() + sectionEnv()
+    + '</div></div>';
+  return stripNote;
+}
+function sectionAttention(){
+  return '<section class="sec">'
+    + '<div class="sec-hd"><h2>需要你处理</h2><button class="more" data-act="goto-filter" data-filter="all">查看全部 ' + icon("chevronRight",12) + '</button></div>'
+    + '<div class="group">' + ATTENTION.map((a,i) => attRow(a,i)).join("") + '</div>'
+    + '</section>';
+}
+function attRow(a,i){
+  const dot = a.kind === "warn" ? "warn" : a.kind === "ok" ? "ok" : a.kind === "unread" ? "doing" : "idle";
+  return `<div class="row two att-row always-actions" data-row data-kind="attention" data-id="att${i}" tabindex="0">
+    <span class="att-icon">${icon(a.icon,16)}</span>
+    <div class="row-main">
+      <div class="row-title">${esc(a.title)}</div>
+      <div class="row-sub"><span class="dot ${dot}" aria-hidden="true"></span><span class="ellip">${esc(a.reason)}</span></div>
+    </div>
+    <div class="act">
+      <button class="go" data-act="${a.act}" data-i="${i}">${esc(a.action)}${icon("chevronRight",12)}</button>
+      <button class="icon-btn sm" data-act="attn-more" data-i="${i}" aria-label="更多：${esc(a.title)}">${icon("more",14)}</button>
+    </div>
+  </div>`;
+}
+function sectionRunning(){
+  return '<section class="sec">'
+    + '<div class="sec-hd"><h2>正在运行</h2><span class="more">' + RUNNING.length + ' 个执行</span></div>'
+    + '<div class="group">' + RUNNING.map(runRow).join("") + '</div>'
+    + '</section>';
+}
+function runRow(r){
+  return `<div class="row two always-actions" data-row data-kind="run" data-id="${r.task}" tabindex="0">
+    <span class="pulse" aria-hidden="true"></span>
+    <div class="row-main">
+      <div class="row-title">${esc(r.title)}</div>
+      <div class="row-sub"><span class="ellip">${esc(r.who)}</span><span class="sepdot">·</span><span>已运行 <span class="num">${esc(r.elapsed)}</span></span><span class="sepdot">·</span><span class="ellip">最近活动 ${esc(r.activity)}</span></div>
+    </div>
+    <div class="row-actions static">
+      <button class="mini" data-act="open-task" data-id="${r.task}">打开</button>
+      <button class="mini" data-act="interrupt" data-id="${r.task}">中断</button>
+      <button class="icon-btn sm" data-act="row-more" data-id="${r.task}" aria-label="更多：${esc(r.title)}">${icon("more",14)}</button>
+    </div>
+  </div>`;
+}
+function sectionEnv(){
+  return '<section class="sec">'
+    + '<div class="sec-hd"><h2>环境</h2><span class="more" style="margin-left:auto">' + serverCounts().ready + '/' + serverCounts().total + ' 就绪</span><button class="more" style="margin-left:8px" data-act="env-pop">全部环境 ' + icon("chevronRight",12) + '</button></div>'
+    + '<div class="group">' + state.servers.map(envRow).join("") + '</div>'
+    + '</section>';
+}
+function envRow(s){
+  const ready = s.phase === "ready";
+  const starting = s.phase === "starting";
+  if(s.phase === "failed"){
+    return `<div class="row env-row failed always-actions" data-row data-kind="env" data-id="${s.id}" tabindex="0">
+      <span class="dot failed" aria-hidden="true"></span>
+      <div class="row-main">
+        <div class="row-title">${esc(s.name)} <span class="badge">${esc(s.kind)}</span><span class="server-state" style="color:var(--amber-text)">${phaseLabel(s)}</span></div>
+        <div class="env-error" role="alert"><span class="e1">${esc((s.error||[])[0]||'启动失败')}</span></div>
+      </div>
+      <div class="env-actions">
+        <button class="mini" data-act="server-log" data-id="${s.id}">查看日志</button>
+        <button class="mini" data-act="server-toggle" data-id="${s.id}">重试</button>
+        <button class="icon-btn sm" data-act="row-more" data-id="${s.id}" aria-label="更多：${esc(s.name)}">${icon("more",14)}</button>
+      </div>
+    </div>`;
+  }
+  return `<div class="row env-row always-actions" data-row data-kind="env" data-id="${s.id}" tabindex="0">
+    <span class="dot ${phaseDot(s)}" aria-hidden="true"></span>
+    <div class="row-main">
+      <div class="row-title">${esc(s.name)} <span class="badge">${esc(s.kind)}</span></div>
+    </div>
+    <button class="url" data-act="open-url" data-url="${esc(s.url)}">${esc(s.url)}</button>
+    <div class="row-meta"><span class="server-state">${phaseLabel(s)}${starting?' · 已 '+esc(s.startedSec||3)+'s':''}</span></div>
+    <div class="row-actions static">
+      <button class="mini" data-act="server-toggle" data-id="${s.id}">${starting?'取消':ready?'停止':'启动'}</button>
+      <button class="icon-btn sm" data-act="server-log" data-id="${s.id}" aria-label="日志：${esc(s.name)}">${icon("more",14)}</button>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   渲染：任务
+   ============================================================ */
+function captureHTML(){
+  const draft = state.captureDraft;
+  return '<div class="capture">' + icon("plus",16)
+    + `<input id="capture" value="${esc(draft)}" placeholder="记一条任务，Enter 创建 · Tab 补充详情 · ⌘N 聚焦" aria-label="快速新建任务" autocomplete="off">`
+    + '<span class="kbd">⌘N</span></div>'
+    + (state.captureDetail ? captureDetailHTML() : '');
+}
+function captureDetailHTML(){
+  return '<div class="capture-detail">'
+    + '<label>优先级 <select data-act="capture-prio"><option>普通</option><option>高</option><option>低</option></select></label>'
+    + '<label>归属 <select data-act="capture-owner"><option>无人</option><option>我</option><option>当前会话</option></select></label>'
+    + '<span class="spacer"></span><span>Enter 创建 · Esc 收起</span>'
+    + '</div>';
+}
+function prioHTML(t){
+  if(t.prio === "high") return '<span class="pri high"><span class="dot" aria-hidden="true"></span>高</span>';
+  return '';
+}
+function statusIcon(t){
+  if(t.status === "done") return icon("checkCircle",16);
+  if(t.status === "doing") return icon("progress",16);
+  if(t.status === "blocked") return icon("ban",16);
+  if(t.status === "cancelled") return icon("ban",16);
+  return icon("circle",16);
+}
+function taskRow(t){
+  const done = t.status === "done";
+  const selected = state.selected.has(t.id);
+  const force = (state.route === "tasks" || state.route === "tasks-selected") && t.id === "t8";
+  const expanded = state.expanded.has(t.id);
+  const two = t.status === "doing";
+  const isHigh = t.prio === "high";
+  const sub = two
+    ? `<div class="row-sub"><span class="ellip">${esc(t.owner)}</span><span class="sepdot">·</span><span>${t.run?'执行中 <span class="num">'+esc(t.run.short||t.run.elapsed)+'</span>':'待执行'}</span><span class="sepdot">·</span><span class="ellip">最近活动 ${esc(t.run?t.run.activity:"暂无")}</span></div>`
+    : '';
+  return `<div class="row${two?' two':''}${selected?' sel':''}${force?' force':''}" data-row data-kind="task" data-id="${t.id}" tabindex="0">
+    <label class="row-sel" aria-label="选择任务：${esc(t.title)}"><input type="checkbox" data-act="select" data-id="${t.id}"${selected?' checked':''}></label>
+    <button class="status ${t.status}" data-act="toggle" data-id="${t.id}" aria-label="${done?'标记未完成':'标记完成'}：${esc(t.title)}" title="${done?'标记未完成':'标记完成'}">${statusIcon(t)}</button>
+    <div class="row-main">
+      <div class="row-title${done?' done':''}" title="${esc(t.title)}">${esc(t.title)}</div>
+      ${sub}
+    </div>
+    <div class="row-meta">${t.run && t.status !== "doing" ? `<span class="badge run-chip"><span class="dot" aria-hidden="true"></span>执行中 ${esc(t.run.short||t.run.elapsed)}</span>` : ''}${prioHTML(t)}${two ? '' : `<span class="who ellip">${esc(t.owner)}</span>`}<span class="num">${esc(t.updated)}</span></div>
+    <div class="row-actions">
+      <button class="mini" data-act="claim" data-id="${t.id}">我来做</button>
+      <button class="mini" data-act="toggle" data-id="${t.id}">${done?'重开':'完成'}</button>
+      <button class="mini" data-act="dispatch" data-id="${t.id}">派发</button>
+      <button class="icon-btn sm" data-act="row-more" data-id="${t.id}" aria-label="更多操作：${esc(t.title)}">${icon("more",14)}</button>
+    </div>
+  </div>` + (expanded ? expandHTML(t) : '') + (state.demo === "conflict" && t.id === "t10" ? conflictHTML(t) : '');
+}
+function expandHTML(t){
+  const run = t.run;
+  const notes = t.notes || [];
+  return `<div class="expand">
+    <div class="ex-title-row">
+      <input class="title-edit" data-act="title-input" data-id="${t.id}" value="${esc(t.title)}" aria-label="编辑任务标题">
+      <span class="edit-mark" aria-hidden="true">${icon("edit",13)}</span><span class="save-state" id="title-save">${icon("checkCircle",12)} 已保存</span>
+    </div>
+    <p class="ex-detail">${esc(t.detail || '暂无详情。')}</p>
+    ${run ? `<div class="run-strip"><span class="pulse" aria-hidden="true"></span>
+      <div class="rs-main"><span>执行中</span><span class="sepdot">·</span><span class="num">${esc(run.short||run.elapsed)}</span><span class="sepdot">·</span><span class="muted ellip">最近活动 ${esc(run.activity)}</span></div>
+      <button class="btn sm" data-act="open-session" data-session="s2">打开会话</button>
+      <button class="btn sm" data-act="interrupt" data-id="${t.id}">中断</button></div>` : ''}
+    <div class="ex-notes">
+      <div class="gh" style="padding-left:0">备注 <span class="n">${notes.length}</span></div>
+      <div class="timeline">${notes.map(n => `<div class="tl"><span class="when num">${esc(n.when)}</span><span class="what">${esc(n.what)}</span></div>`).join("")}</div>
+    </div>
+    <div class="ex-actions">
+      <button class="btn sm" data-act="claim" data-id="${t.id}">我来做</button>
+      <button class="btn sm" data-act="toggle" data-id="${t.id}">完成</button>
+      <button class="btn sm" data-act="mark-blocked" data-id="${t.id}">标为阻塞</button>
+      <button class="btn sm" data-act="cancel-task" data-id="${t.id}">取消</button>
+      <button class="btn sm" data-act="dispatch" data-id="${t.id}">派发</button>
+      <button class="btn sm" data-act="copy-link" data-id="${t.id}">复制链接</button>
+      <button class="btn sm danger" data-act="delete" data-id="${t.id}">删除</button>
+    </div>
+  </div>`;
+}
+function conflictHTML(t){
+  return `<div class="conflict" role="alert">
+    ${icon("alert",14)}
+    <div class="cf-main"><span class="t">这条任务刚被「中枢重构」更新</span><span class="cf-sub">你基于 2 分钟前的版本修改了「${esc(t.title)}」</span></div>
+    <button class="btn sm" data-act="conflict-accept" data-id="${t.id}">采用最新</button>
+    <button class="btn sm" data-act="conflict-retry" data-id="${t.id}">重试我的修改</button>
+  </div>`;
+}
+function staleHTML(){
+  return '<div class="banner" role="alert">' + icon("alert",14)
+    + '<span>同步中断 · 显示 2 分钟前的数据</span><span class="spacer"></span>'
+    + '<button class="link" data-act="retry">点此重试</button></div>';
+}
+function toolbarHTML(){
+  const c = counts();
+  const chips = [["all","全部",c.all],["todo","待办",c.todo],["doing","进行中",c.doing],["blocked","阻塞",c.blocked],["done","已完成",c.done],["cancelled","已取消",c.cancelled]];
+  return '<div class="toolbar"><div class="chips">' + chips.map(([k,label,n]) =>
+      `<button class="chip${state.filter===k?' on':''}" data-act="filter" data-filter="${k}" aria-pressed="${state.filter===k}">${label} <span class="n num">${n}</span></button>`
+    ).join("") + '</div>'
+    + '<div class="field task-search">' + icon("search",14) + `<input class="input" id="task-search" data-act="task-search" placeholder="搜索任务…" value="${esc(state.taskQuery||'')}" aria-label="搜索任务"></div>`
+    + '<div class="toolbar-actions">'
+    + '<button class="ctl" data-act="group-ctl">' + icon("stack",13) + '分组：状态' + icon("chevronDown",12) + '</button>'
+    + '<button class="ctl" data-act="sort-ctl">' + icon("layers",13) + '排序：优先级' + '</button>'
+    + '<div class="seg" role="group" aria-label="视图"><button class="on" data-act="view-list">' + icon("list",12) + '列表</button><button data-act="view-board">' + icon("board",12) + '看板</button></div>'
+    + '<button class="btn lg primary" data-act="new-task">' + icon("plus",13) + '新建</button>'
+    + '</div></div>';
+}
+function bulkHTML(){
+  const n = state.selected.size;
+  if(!n) return '';
+  return '<div class="bulk"><span>已选 <span class="n">' + n + '</span> 项</span>'
+    + '<span class="spacer"></span>'
+    + '<button class="mini" data-act="bulk-claim">我来做</button>'
+    + '<button class="mini" data-act="bulk-done">完成</button>'
+    + '<button class="mini" data-act="bulk-dispatch">派发</button>'
+    + '<button class="mini danger" data-act="bulk-delete">删除</button>'
+    + '<button class="mini" data-act="bulk-cancel">取消</button></div>';
+}
+function emptyTasksHTML(){
+  return '<div class="empty">' + icon("inbox",28)
+    + '<div class="empty-title">还没有任务</div>'
+    + '<div class="empty-sub">记下这个工作区要做的第一件事，或从模板开始。</div>'
+    + '<div class="templates"><button class="tpl" data-act="tpl">梳理这个仓库的待办</button><button class="tpl" data-act="tpl">修一个 bug</button><button class="tpl" data-act="tpl">写一份 README</button></div>'
+    + '</div>';
+}
+function emptyFilterHTML(){
+  const label = ({todo:"待办",doing:"进行中",blocked:"阻塞",done:"已完成",cancelled:"已取消"})[state.filter] || "";
+  const q = (state.taskQuery || "").trim();
+  if(q) return '<div class="empty">' + icon("search",24)
+    + '<div class="empty-title">没有匹配「' + esc(q) + '」的任务</div>'
+    + '<div class="empty-sub">换个关键词，或清空搜索后查看全部任务。</div>'
+    + '<div class="templates"><button class="tpl" data-act="clear-task-search">清空搜索</button><button class="tpl" data-act="filter" data-filter="all">查看全部任务</button></div></div>';
+  return '<div class="empty">' + icon("search",24)
+    + '<div class="empty-title">没有「' + label + '」的任务</div>'
+    + '<div class="empty-sub">换个筛选，或把视图切回全部。</div>'
+    + '<div class="templates"><button class="tpl" data-act="filter" data-filter="all">查看全部任务</button></div></div>';
+}
+function denseRowsHTML(){
+  const titles = TASK_SEED.map(t => t.title);
+  const sts = ["todo","doing","blocked","done"];
+  let rows = "";
+  for(let i = 0; i < 200; i++){
+    const st = sts[i % 4];
+    const title = titles[i % titles.length] + " · 批次 " + (Math.floor(i / titles.length) + 1);
+    rows += `<div class="row" data-row data-kind="dense" data-id="dense${i}" tabindex="0">
+      <button class="status ${st}" data-act="dense-noop" aria-label="状态">${icon(st==='done'?'checkCircle':st==='blocked'?'ban':st==='doing'?'progress':'circle',16)}</button>
+      <div class="row-main"><div class="row-title${st==='done'?' done':''}">${esc(title)}</div></div>
+      <div class="row-meta"><span class="num">${i + 1} / 200</span></div>
+    </div>`;
+  }
+  return '<div class="banner"><span>已加载 200 条任务 · 超过虚拟化阈值 200 行</span><span class="spacer"></span><span class="hint">列表已按状态折叠</span></div>'
+    + '<div class="group">' + rows + '</div>';
+}
+function listHTML(){
+  if(state.demo === "empty") return emptyTasksHTML();
+  if(state.demo === "dense") return denseRowsHTML();
+  const order = state.route === "tasks-expanded"
+    ? [["doing","进行中"],["todo","待办"],["blocked","阻塞"],["done","已完成"],["cancelled","已取消"]]
+    : [["todo","待办"],["doing","进行中"],["blocked","阻塞"],["done","已完成"],["cancelled","已取消"]];
+  let out = "";
+  order.forEach(([st,label]) => {
+    if(state.filter !== "all" && state.filter !== st) return;
+    const rows = state.tasks.filter(t => t.status === st && (!state.taskQuery || t.title.toLowerCase().includes(state.taskQuery.trim().toLowerCase())));
+    if(!rows.length) return;
+    const collapsed = state.collapsed.has(st) && !state.taskQuery;
+    const ghLabel = st === "done" ? (collapsed ? `已完成 ${rows.length} 项 · 展开` : `已完成 ${rows.length} 项 · 收起`) : label;
+    out += `<button class="gh${collapsed?' collapsed':''}" data-act="group-toggle" data-group="${st}" aria-expanded="${!collapsed}">${icon("chevronDown",12)}<span>${ghLabel}</span>${st==='done'?'':'<span class="n num">'+rows.length+'</span>'}</button>`;
+    if(!collapsed) out += '<div class="group">' + rows.map(taskRow).join("") + '</div>';
+  });
+  return out || emptyFilterHTML();
+}
+function tasksFootHTML(){
+  const stale = state.demo === "stale";
+  return '<div class="view-foot">'
+    + (stale
+      ? '<span class="sync-dot" style="background:var(--amber)"></span><span>同步中断 · 已重试 2 次 · 显示的是 2 分钟前的数据</span><button class="link" data-act="retry">点此重试</button>'
+      : '<span class="sync-dot"></span><span>更新于 3 秒前 · 自动刷新</span>')
+    + '<span class="spacer"></span>'
+    + '<span class="keys"><span class="kbd">n</span> 新建 <span class="kbd">/</span> 搜索 <span class="kbd">⌘K</span> 命令</span>'
+    + '</div>';
+}
+function viewTasks(){
+  return '<div class="view">'
+    + bulkHTML()
+    + '<div class="scroll">' + captureHTML() + toolbarHTML()
+    + (state.demo === "stale" ? staleHTML() : "")
+    + listHTML() + '</div>'
+    + tasksFootHTML()
+    + '</div>';
+}
+
+/* ============================================================
+   渲染：看板
+   ============================================================ */
+function viewBoard(){
+  const cols = [["todo","待办"],["doing","进行中"],["blocked","阻塞"],["done","已完成"]];
+  return '<div class="view"><div class="board-wrap">'
+    + '<div class="board-head"><span class="ttl">任务板</span><span class="cnt num">' + counts().all + '</span><span class="spacer"></span>'
+    + '<div class="seg" role="group" aria-label="视图"><button data-act="view-list">' + icon("list",12) + '列表</button><button class="on" data-act="view-board">' + icon("board",12) + '看板</button></div>'
+    + '<button class="btn lg primary" data-act="new-task">' + icon("plus",13) + '新建</button></div>'
+    + '<div class="board-filters"><span>全部 <span class="num">' + counts().all + '</span></span><span>待办 <span class="num">' + counts().todo + '</span></span><span>进行中 <span class="num">' + counts().doing + '</span></span><span>阻塞 <span class="num">' + counts().blocked + '</span></span><span>已完成 <span class="num">' + counts().done + '</span></span><span class="spacer"></span><span style="display:inline-flex;align-items:center;gap:5px">' + icon("grip",11) + '拖动排序 · 键盘 [ ] 改状态</span></div>'
+    + '<div class="board">' + cols.map(([st,label]) => boardCol(st,label)).join("") + '</div>'
+    + '</div></div>';
+}
+function boardCol(st,label){
+  const rows = state.tasks.filter(t => t.status === st);
+  return `<div class="col ${st}">
+    <div class="col-hd"><span class="dot ${st}" aria-hidden="true"></span>${label}<span class="n num">${rows.length}</span></div>
+    ${rows.map(t => `<button class="card" data-row data-kind="board-card" data-act="open-board-task" data-id="${t.id}" aria-label="打开任务：${esc(t.title)}" title="${esc(t.title)}">
+      <span class="grip">${icon("grip",12)}</span>
+      <div class="card-title${t.status==='done'?' done':''}">${esc(t.title)}</div>
+      <div class="card-meta">${t.status==='done'?`<span class="done-check" aria-label="已完成">${icon("checkCircle",11)}</span>`:''}${t.prio==='high'?'<span class="pri high"><span class="dot" aria-hidden="true"></span>高</span>':''}<span class="who">${esc(shortOwner(t.owner))}</span><span class="sepdot">·</span><span class="num">${esc(t.updated)}</span></div>
+    </button>`).join("")}
+  </div>`;
+}
+function shortOwner(owner){
+  return owner.replace(/^(会话|子会话)「/,"「").replace(/」$/,"」");
+}
+
+/* ============================================================
+   渲染：对话
+   ============================================================ */
+function viewSessions(){
+  const f = state.sessionFilter || "all";
+  const cnt = {
+    all: state.showClosed ? state.sessions.length : state.sessions.filter(s => s.status !== "closed").length,
+    running: state.sessions.filter(s => s.status === "running").length,
+    idle: state.sessions.filter(s => s.status === "idle").length,
+    unread: state.sessions.filter(unreadOf).length
+  };
+  const filtered = state.sessions.filter(s => {
+    if(!state.showClosed && s.status === "closed") return false;
+    if(f === "running") return s.status === "running";
+    if(f === "idle") return s.status === "idle";
+    if(f === "unread") return unreadOf(s);
+    return true;
+  }).filter(s => {
+    const q = (state.sessionQuery || "").trim().toLowerCase();
+    return !q || s.title.toLowerCase().includes(q);
+  });
+  const chips = [["all","全部",cnt.all],["running","运行中",cnt.running],["idle","空闲",cnt.idle],["unread","有未读",cnt.unread]];
+  return '<div class="view"><div class="scroll">'
+    + '<div class="sess-toolbar"><div class="chips">' + chips.map(([k,label,n]) =>
+        `<button class="chip${f===k?' on':''}" data-act="sess-filter" data-filter="${k}" aria-pressed="${f===k}">${label} <span class="n num">${n}</span></button>`).join("")
+    + '</div>'
+    + '<label class="flip sess-closed-toggle"><input type="checkbox" data-act="sess-show-closed"' + (state.showClosed?' checked':'') + '>显示已关闭</label>'
+    + '<div class="field">' + icon("search",14) + `<input class="input" id="sess-search" data-act="sess-search" placeholder="搜索会话…" value="${esc(state.sessionQuery||'')}" aria-label="搜索会话"></div>`
+    + '<button class="btn lg primary" data-act="new-subchat">' + icon("plus",13) + '新建子会话</button></div>'
+    + '<div class="group">' + (filtered.length ? filtered.map(sessHTML).join("") : sessEmptyHTML()) + '</div>'
+    + '</div></div>';
+}
+function sessEmptyHTML(){
+  return '<div class="empty">' + icon("chat",26) + '<div class="empty-title">没有匹配的会话</div><div class="empty-sub">换个筛选，或清空搜索。</div><div class="templates"><button class="tpl" data-act="sess-filter" data-filter="all">查看全部对话</button></div></div>';
+}
+function sessHTML(s){
+  const expanded = state.expandedSessions.has(s.id);
+  const unread = s.subchats.reduce((n,c) => n + (c.unread || 0), 0);
+  const dot = s.status === "running" ? "doing" : s.status === "idle" ? "idle" : "idle";
+  return `<div class="row sess-row always-actions" data-row data-kind="session" data-id="${s.id}" tabindex="0" aria-expanded="${expanded}">
+    <span class="dot ${s.status==='closed'?'closed':dot}" aria-hidden="true"></span>
+    <div class="row-main">
+      <div class="row-title"${s.status==='closed'?' style="color:var(--fg-3)"':''}><span class="ellip">${esc(s.title)}</span>${s.current?'<span class="badge">当前</span>':''}${s.status==='closed'?'<span class="badge">已关闭</span>':''}</div>
+      <div class="row-sub"><span>${sessionStatusLabel(s)}</span><span class="sepdot">·</span><span>关联任务 <span class="num">${s.relatedTasks||0}</span></span><span class="sepdot">·</span><span>子会话 <span class="num">${s.subchats.length}</span></span><span class="sepdot">·</span><span class="num">${esc(s.updated)}</span></div>
+    </div>
+    ${unread ? `<span class="badge unread" aria-label="${unread} 条未读">未读 ${unread}</span>` : ''}
+    <div class="row-actions static">
+      <button class="mini" data-act="open-session" data-id="${s.id}">打开</button>
+      ${s.status === "closed"
+        ? `<button class="mini" data-act="session-reopen" data-id="${s.id}">重开</button>`
+        : `<button class="mini" data-act="session-interrupt" data-id="${s.id}">中断</button><button class="mini" data-act="session-close" data-id="${s.id}">关闭</button>`}
+      <button class="icon-btn sm" data-act="row-more" data-id="${s.id}" aria-label="更多：${esc(s.title)}">${icon("more",14)}</button>
+    </div>
+  </div>${expanded ? '<div class="sub-list">' + s.subchats.map(c => subRowHTML(s,c)).join("") + '</div>' : ''}`;
+}
+function subRowHTML(s,c){
+  const running = c.status === "running";
+  const closed = c.status === "closed";
+  const dot = running ? "doing" : "idle";
+  const msgs = (state.subMessages[c.id] || []);
+  const draft = state.replyDrafts[c.id] || "";
+  return `<div class="subrow${closed?' closed':''}" data-row data-kind="subchat" data-id="${c.id}" tabindex="0">
+    <span class="dot ${dot} sub-dot" aria-hidden="true"></span>
+    <div class="sub-main">
+      <div class="sub-title"><span class="tt">${esc(c.title)}</span><span class="sub-state">${running?"运行中":closed?"已关闭":"空闲"}</span>${c.unread?`<span class="badge unread" aria-label="${c.unread} 条未读">未读 ${c.unread}</span>`:''}</div>
+      <div class="sub-reply">${icon("quote",12)}<span class="tx" title="${esc(c.reply)}">${esc(c.reply)}</span></div>
+      ${msgs.map(m => `<div class="msg-line"><span class="who">你</span><span>${esc(m)}</span></div>`).join("")}
+      ${running ? `<div class="composer"><input class="input" id="reply-${c.id}" data-act="reply-input" data-id="${c.id}" value="${esc(draft)}" placeholder="发消息…（⏎ 发送，⇧⏎ 换行）" aria-label="回复子会话 ${esc(c.title)}"><button class="btn sm" data-act="reply-send" data-id="${c.id}">发送</button></div>` : ''}
+    </div>
+    <div class="sub-meta"><span class="num">${esc(c.updated)}</span></div>
+    <div class="sub-actions">
+      <button class="mini" data-act="open-subchat" data-id="${c.id}">打开</button>
+      ${running ? `<button class="mini" data-act="sub-interrupt" data-id="${c.id}">中断</button>` : ''}
+      ${!closed ? `<button class="mini" data-act="sub-close" data-id="${c.id}">关闭</button>` : `<button class="mini" data-act="sub-reopen" data-id="${c.id}">重开</button>`}
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   渲染：设置（亮色）
+   ============================================================ */
+function viewSettings(){
+  return '<div class="view settings"><div class="scroll">'
+    + '<h1 class="page-title">工作区设置</h1>'
+    + '<div class="page-sub">仅当前工作区生效 · 保存自动生效 · 下一轮会话读取</div>'
+    + settingsRules() + '<div class="set-cols">' + settingsContext() + settingsSkills() + '</div>'
+    + '</div></div>';
+}
+function settingsRules(){
+  return '<section class="set-sec"><div class="set-hd"><h2>规则链</h2><span class="hint">按继承顺序生效 · 共 ' + RULES.length + ' 层</span></div>'
+    + '<div class="group">' + RULES.map((r,i) => {
+      const open = !!r.open;
+      return `<div class="row rule-row${open?' open':''}" data-row data-kind="rule" data-id="rule${i}" tabindex="0">
+        <span class="rule-ic">${icon("file",15)}</span>
+        <span class="rule-path" title="${esc(r.path)}">${esc(r.path)}</span>
+        <span class="badge rule-src">${esc(r.src)}</span>
+        <span class="rule-bytes num">${esc(r.bytes)}</span>
+        <span class="rule-edit">${r.editable ? '可编辑' + icon("chevronRight",11) : icon("lock",12) + '只读'}</span>
+      </div>`
+      + (open ? `<div class="editor">
+          <div class="ed-hd"><span class="badge">编辑中</span><span class="ed-path" title="${esc(r.path)}">${esc(r.path)}</span><span class="dirty" id="rule-dirty"><span class="dot" aria-hidden="true"></span>未保存的修改</span></div>
+          <div class="editor-conflict" role="alert">${icon("alert",14)}<span>文件已被其他会话修改</span><span class="spacer"></span><button class="btn sm" data-act="file-accept">采用最新</button><button class="btn sm" data-act="file-overwrite">覆盖</button></div>
+          <textarea class="mono-input rule-ta" data-act="rule-input" spellcheck="false" aria-label="编辑 ${esc(r.path)}">${esc(r.content||'')}</textarea>
+          <div class="ed-foot"><span>自动保存已暂停</span><span class="spacer"></span><span class="kbd-hint"><span class="kbd">⌘S</span> 立即保存</span><button class="btn sm ghost" data-act="rule-reset">恢复上次保存</button></div>
+        </div>` : '')
+    }).join("") + '</div></section>';
+}
+function settingsContext(){
+  return '<section class="set-sec"><div class="set-hd"><h2>上下文</h2><span class="hint">CONTEXT.md · 116 字节</span></div>'
+    + '<div class="group"><div class="editor" style="border-top:0">'
+    + '<div class="ed-hd"><span class="ed-path">~/Projects/snippets/zvid/dsh-plugins/CONTEXT.md</span><span class="saving" id="ctx-save"><span class="sp" aria-hidden="true"></span> 保存中…</span></div>'
+    + `<textarea class="mono-input ctx-ta" data-act="ctx-input" spellcheck="false" aria-label="编辑工作区上下文">${esc(CONTEXT_DOC)}</textarea>`
+    + '<div class="ed-foot"><span>仅注入同目录会话 · 下一轮生效</span><span class="spacer"></span><span>自动保存 · 1s 防抖</span></div>'
+    + '</div></div></section>';
+}
+function settingsSkills(){
+  return '<section class="set-sec"><div class="set-hd"><h2>技能</h2><span class="hint">' + SKILLS.length + ' 个可用</span><span class="spacer"></span><button class="btn sm" data-act="new-skill">' + icon("plus",12) + '新建技能</button></div>'
+    + '<div class="field set-search">' + icon("search",14) + '<input class="input" id="skill-search" placeholder="搜索技能…" aria-label="搜索技能"></div>'
+    + '<div class="group">' + SKILLS.map((sk,i) => `<div class="row skill-row" data-row data-kind="skill" data-id="skill${i}" tabindex="0">
+        <span class="skill-name" title="${esc(sk.name)}">${esc(sk.name)}</span>
+        <span class="badge">${esc(sk.src)}</span>
+        <span class="skill-desc" title="${esc(sk.desc)}">${esc(sk.desc)}</span>
+        <span class="skill-face">${esc(sk.face)}</span>
+        <button class="icon-btn sm" data-act="skill-more" data-id="${i}" aria-label="更多：${esc(sk.name)}">${icon("more",14)}</button>
+      </div>`).join("") + '</div></section>';
+}
+
+/* ============================================================
+   渲染：状态页
+   ============================================================ */
+function gblock(label, note, body, flush){
+  return '<div class="gblock"><div class="glabel">' + label + (note?'<span class="n">'+note+'</span>':'') + '</div><div class="gbody' + (flush?' flush':'') + '">' + body + '</div></div>';
+}
+function viewStates(){
+  return '<div class="view"><div class="gallery">'
+    + '<div class="gallery-head"><span class="ttl">界面状态</span><span class="sub">每个取数表面的兜底状态 · 暗色</span></div>'
+    + '<div class="gal-grid">'
+    + gblock('空状态 · 任务', '无数据', '<div class="empty" style="padding:14px 8px 8px">' + icon("inbox",24) + '<div class="empty-title">还没有任务</div><div class="empty-sub">记下第一件事，或从模板开始。</div><div class="templates"><button class="tpl">梳理这个仓库的待办</button><button class="tpl">修一个 bug</button></div></div>')
+    + gblock('加载中 · 骨架', '延迟 300ms 后出现', '<div class="sk-row"><span class="sk circle"></span><div class="sk-stack"><span class="sk w2"></span><span class="sk w5"></span></div></div><div class="sk-row"><span class="sk circle"></span><div class="sk-stack"><span class="sk w3"></span><span class="sk w4"></span></div></div><div class="sk-row"><span class="sk circle"></span><div class="sk-stack"><span class="sk w2"></span><span class="sk w5"></span></div></div>')
+    + gblock('错误 · 同步中断', '保旧数据', '<div class="banner" role="alert" style="margin:0 0 6px">' + icon("alert",14) + '<span>同步中断 · 显示 2 分钟前的数据</span><span class="spacer"></span><button class="link">点此重试</button></div><div class="inline-note">' + icon("clock",13) + '上次尝试 2 分钟前 · 已重试 2 次</div>')
+    + gblock('冲突 · 行内', '409', '<div class="inline-note" style="font-size:12px;color:var(--fg)">' + icon("ban",14) + '这条任务刚被「中枢重构」更新</div><div class="inline-note">你基于 2 分钟前的版本修改了「中枢快速捕获交互」</div><div class="btn-row" style="margin-top:6px"><button class="btn sm">采用最新</button><button class="btn sm">重试我的修改</button></div>')
+    + gblock('离线', '无网络', '<div class="offline">' + icon("wifiOff",22) + '<div class="t">无法连接工作区服务</div><div class="s">检查网络后重试；当前显示的是本机缓存，不阻塞浏览。</div><button class="btn sm">重新连接</button></div>')
+    + gblock('权限受限', '行内说明', '<div class="inline-note">' + icon("lock",14) + '需要先打开一个对话，才能新建子会话。</div><div class="inline-note" style="color:var(--fg-3)">这个工作区未授权写入任务板</div><div class="btn-row" style="margin-top:6px"><button class="btn sm">打开当前对话</button><button class="btn sm ghost">查看权限说明</button></div>')
+    + gblock('长标题 / 长路径', '截断 + title', '<div class="inline-note" style="display:block"><div class="row-title" title="验证服务器自动识别在 monorepo 多包工作区中的表现并补充回归用例" style="max-width:100%">验证服务器自动识别在 monorepo 多包工作区中的表现并补充回归用例</div></div><div class="long-path" title="~/Projects/snippets/zvid/dsh-plugins/packages/workspace-hub/docs/redesign/prototype/index.html">~/Projects/snippets/zvid/dsh-plugins/packages/workspace-hub/docs/redesign/prototype/index.html</div>')
+    + gblock('大量任务', '200 条 · 虚拟化', '<div class="stress-note">' + icon("layers",14) + '<span>已加载 <span class="num">200</span> 条任务，仅渲染当前视口。</span></div><div class="inline-note" style="color:var(--fg-3);margin-top:4px">分组默认折叠 · 键盘 j/k 不触发整页滚动</div>')
+    + gblock('对话 · 加载 / 错误', '两个状态', '<div class="sk-row"><span class="sk circle"></span><div class="sk-stack"><span class="sk w2"></span><span class="sk w4"></span></div></div><div class="sk-row"><span class="sk circle"></span><div class="sk-stack"><span class="sk w3"></span><span class="sk w5"></span></div></div><div class="banner" role="alert" style="margin:8px 0 0">' + icon("alert",14) + '<span>对话列表读取失败</span><span class="spacer"></span><button class="link">重试</button></div>')
+    + gblock('环境 · 探测中 / 不可达', '服务器状态', '<div class="inline-note">' + icon("refresh",13) + '<span class="dot starting" aria-hidden="true"></span>docs preview · 探测中…</div><div class="inline-note" role="alert">' + icon("alert",13) + '<span class="dot failed" aria-hidden="true"></span>design preview · 不可达（ECONNREFUSED）</div><div class="btn-row" style="margin-top:6px"><button class="btn sm">重新探测</button><button class="btn sm ghost">查看日志</button></div>')
+    + gblock('设置 · 读取失败', '权限 / 网络', '<div class="inline-note" role="alert">' + icon("alert",14) + '无法读取规则链 · 工作区未授权</div><div class="inline-note" style="color:var(--fg-3)">上下文与技能仍可查看，规则保存已暂停。</div><div class="btn-row" style="margin-top:6px"><button class="btn sm">重试读取</button><button class="btn sm ghost">查看权限</button></div>')
+    + '</div></div></div>';
+}
+
+/* ============================================================
+   渲染：派发 sheet / 命令面板
+   ============================================================ */
+function targetHTML(n, title, sub, disabled){
+  const on = state.sheet.target === n;
+  return `<div class="target ${on?'on':''}${disabled?' off':''}">
+    <button class="target-hit" data-act="sheet-target" data-target="${n}" role="radio" aria-checked="${on}">
+      <span class="radio" aria-hidden="true"></span>
+      <span class="target-main"><span class="target-title">${title}</span><span class="target-sub">${sub}</span></span>
+    </button>
+    ${n === 3 ? `<select class="input target-select" data-act="sheet-existing" aria-label="选择已有对话"${on?'':' disabled'}>
+      <option value="s1"${state.sheet.existing==='s1'?' selected':''}>整理工作区路径的展示规则 · 运行中</option>
+      <option value="s2"${state.sheet.existing==='s2'?' selected':''}>修复暗色浮层 · 空闲</option>
+      <option value="s3"${state.sheet.existing==='s3'?' selected':''}>中枢重构 · 运行中</option>
+    </select>` : ''}
+  </div>`;
+}
+function sheetHTML(){
+  const t = taskById(state.sheet.taskId) || state.tasks[0];
+  return `<div class="overlay" data-overlay="sheet">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1">
+      <div class="sheet-hd"><div class="sheet-title" id="sheet-title">派发「${esc(t.title)}」</div><button class="icon-btn" data-act="sheet-close" aria-label="关闭派发面板">${icon("close",16)}</button></div>
+      <div class="sheet-sub">交给一个会话来执行。它会收到任务详情，并在完成后把结果写回任务。</div>
+      <div class="sheet-body">
+        ${targetHTML(1, '新建对话', '在当前工作区开一个新会话')}
+        ${targetHTML(2, '当前对话的子会话', '挂在「整理工作区路径的展示规则」下')}
+        ${targetHTML(3, '已有对话', '选择最近 5 个对话之一，带运行状态')}
+        <div class="field-label">补充说明（可选）</div>
+        <textarea class="input" data-act="sheet-note" placeholder="你希望它优先验证哪些场景？" aria-label="补充说明">${esc(state.sheet.note)}</textarea>
+        <label class="check"><input type="checkbox" data-act="sheet-open-after"${state.sheet.openAfter?' checked':''}> 派发后打开该会话</label>
+      </div>
+      <div class="sheet-foot">
+        <span class="hint"><span class="kbd">1/2/3</span> 选择 <span class="kbd">⏎</span> 派发 <span class="kbd">Esc</span> 关闭</span>
+        <span class="spacer"></span>
+        <button class="btn" data-act="sheet-close">取消</button>
+        <button class="btn primary" data-act="sheet-send">派发</button>
+      </div>
+    </div>
+  </div>`;
+}
+const PALETTE_ACTIONS = [
+  {label:"新建任务", hint:"n", icon:"plus", run:() => { navTo("tasks"); setTimeout(focusCapture, 80); }},
+  {label:"新建子对话", hint:"挂在当前会话下", icon:"chat", run:() => toast("已创建子对话「未命名子会话」")},
+  {label:"启动服务器", hint:"docs preview · 4173", icon:"play", run:() => startServer("srv2")},
+  {label:"打开设置", hint:"⌘,", icon:"gear", run:() => navTo("settings")},
+  {label:"刷新数据", hint:"单请求快照", icon:"refresh", run:() => { state.demo = null; render(); toast("已刷新 · 更新于刚刚"); }},
+  {label:"切换工作区", hint:"dsh-plugins", icon:"layers", run:() => toast("演示：当前只有 dsh-plugins 一个工作区")}
+];
+function paletteData(){
+  const q = (state.palette.query || "").trim().toLowerCase();
+  const groups = [
+    {name:"操作", items:PALETTE_ACTIONS.map((a,i) => ({key:"act"+i, label:a.label, hint:a.hint, icon:a.icon, run:a.run}))},
+    {name:"任务", items:["t1","t6","t12"].map(id => { const t = taskById(id); return {key:id, label:t.title, hint:t.updated, icon:"tasks", run:() => openTask(id)}; })},
+    {name:"对话", items:["s1","s3"].map(id => { const s = sessionById(id); return {key:id, label:s.title, hint:sessionStatusLabel(s), icon:"chat", run:() => { navTo("sessions"); }}; })},
+    {name:"工作区", items:[{key:"ws", label:"dsh-plugins", hint:"当前工作区", icon:"layers", run:() => { navTo("now"); toast("已回到工作区概览"); }}]}
+  ];
+  const out = [], flat = [];
+  groups.forEach(g => {
+    const items = g.items.filter(it => !q || (it.label + " " + it.hint).toLowerCase().includes(q));
+    if(items.length){ out.push({name:g.name, items}); items.forEach(it => flat.push(it)); }
+  });
+  return {groups:out, flat};
+}
+function paletteListHTML(){
+  const data = paletteData();
+  if(!data.flat.length) return '<div class="pal-empty">没有找到「' + esc(state.palette.query) + '」<br>试试「派发」「服务器」或任务标题</div>';
+  let idx = 0, html = "";
+  data.groups.forEach(g => {
+    html += '<div class="pal-group">' + g.name + '</div>';
+    g.items.forEach(it => {
+      html += `<div class="pal-row${idx === state.palette.index ? ' on' : ''}" role="option" id="pal-opt-${idx}" aria-selected="${idx === state.palette.index}" data-act="palette-exec" data-index="${idx}">${icon(it.icon,15)}<span class="lbl">${esc(it.label)}</span><span class="rt">${esc(it.hint||'')}</span></div>`;
+      idx++;
+    });
+  });
+  return html;
+}
+function paletteHTML(){
+  return `<div class="overlay palette-overlay" data-overlay="palette">
+    <div class="palette" role="dialog" aria-modal="true" aria-label="命令面板">
+      <div class="pal-input">${icon("search",16)}<input id="pal-input" data-act="palette-input" placeholder="输入命令，或搜索任务、对话…" value="${esc(state.palette.query)}" aria-label="命令面板搜索" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="pal-list" aria-activedescendant="pal-opt-${state.palette.index}"><span class="kbd">esc</span></div>
+      <div class="pal-list" id="pal-list" role="listbox" aria-label="命令结果">${paletteListHTML()}</div>
+      <div class="pal-foot"><span class="g"><span class="kbd">↑</span><span class="kbd">↓</span> 选择</span><span class="g"><span class="kbd">↵</span> 执行</span><span class="g"><span class="kbd">esc</span> 关闭</span><span class="spacer"></span><span class="ws">dsh-plugins · 工作区中枢</span></div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   渲染：菜单 / popover / toast
+   ============================================================ */
+function renderMenu(){
+  if(!state.menu){ menuEl.hidden = true; menuEl.innerHTML = ""; return; }
+  menuEl.hidden = false;
+  if(state.menu.type === "demo"){
+    menuEl.style.top = "50px"; menuEl.style.right = "16px"; menuEl.style.left = "auto";
+    menuEl.innerHTML = '<div class="menu-hd">演示状态</div>'
+      + menuItem("alert","同步中断","数据保留","demo","stale")
+      + menuItem("ban","冲突","行内解决","demo","conflict")
+      + menuItem("inbox","空状态","无任务","demo","empty")
+      + menuItem("layers","大量数据","200 条","demo","dense")
+      + '<div class="menu-sep"></div>' + menuItem("refresh","恢复正常","","demo","reset");
+  } else if(state.menu.type === "ws"){
+    menuEl.style.top = "48px"; menuEl.style.left = "82px"; menuEl.style.right = "auto";
+    const spaces = [["dsh-plugins","~/Projects/snippets/zvid/dsh-plugins",true],["hyperframes","~/Projects/snippets/hyperframes",false],["open-design","~/Projects/open-design",false]];
+    menuEl.innerHTML = '<div class="menu-hd">切换工作区</div>' + spaces.map(([name,path,cur]) =>
+      `<button class="menu-item" data-act="ws-pick" data-name="${esc(name)}">${icon("layers",14)}<span>${esc(name)}</span><span class="hint">${cur?'当前':''}</span></button>`).join("")
+      + '<div class="menu-sep"></div><button class="menu-item" data-act="ws-pick" data-name="打开其他工作区…">' + icon("search",14) + '<span>打开其他工作区…</span></button>';
+  } else if(state.menu.type === "row"){
+    const t = taskById(state.menu.taskId);
+    menuEl.style.top = state.menu.top + "px";
+    menuEl.style.right = state.menu.right + "px";
+    menuEl.style.left = "auto";
+    menuEl.innerHTML = '<div class="menu-hd">' + esc(t ? t.title : "任务") + '</div>'
+      + menuItem("refresh","放回队列","","row-menu","requeue",state.menu.taskId)
+      + menuItem("edit","编辑标题","e","row-menu","edit",state.menu.taskId)
+      + menuItem("copy","复制链接","","row-menu","copy",state.menu.taskId)
+      + '<div class="menu-sep"></div>' + menuItem("close","删除","","row-menu","delete",state.menu.taskId);
+  }
+}
+function menuItem(ic,label,hint,act,demo,id){
+  return `<button class="menu-item" data-act="${act}" data-demo="${demo||''}" data-id="${id||''}">${icon(ic,14)}<span>${esc(label)}</span>${hint?'<span class="hint">'+esc(hint)+'</span>':''}</button>`;
+}
+function renderPop(){
+  if(!state.envPop){ popEl.hidden = true; popEl.innerHTML = ""; return; }
+  popEl.hidden = false;
+  popEl.innerHTML = '<div class="pop-hd">环境<span class="spacer"></span><span style="font-weight:400;letter-spacing:0">' + serverCounts().ready + '/' + serverCounts().total + ' 就绪</span></div>'
+    + state.servers.map(s => `<div class="pop-row"><span class="dot ${phaseDot(s)}" aria-hidden="true"></span>
+      <div class="pr-main"><div class="pr-name"><span class="nm">${esc(s.name)}</span><span class="badge">${esc(s.kind)}</span><span class="badge">${phaseLabel(s)}</span></div><div class="pr-url">${esc(s.url)}</div></div>
+      <button class="btn sm" data-act="server-toggle" data-id="${s.id}">${s.phase==='ready'?'停止':s.phase==='starting'?'取消':'启动'}</button></div>`).join("")
+    + '<div class="pop-foot"><button class="menu-item" data-act="nav" data-route="now">' + icon("grid",14) + '<span>在概览中查看环境</span></button></div>';
+}
+function renderToasts(){
+  toastsEl.innerHTML = state.toasts.map(t => `<div class="toast${t.error?' error':''}" role="${t.error?'alert':'status'}">
+    ${t.icon?icon(t.icon,14):''}<span>${esc(t.text)}</span>
+    ${t.action ? `<button class="t-act" data-act="toast-action" data-id="${t.id}">${esc(t.action)}</button>` : ''}
+  </div>`).join("");
+}
+
+/* ============================================================
+   渲染调度 / 路由
+   ============================================================ */
+function viewHTML(route){
+  switch(route){
+    case "tasks":
+    case "tasks-selected":
+    case "tasks-expanded":
+    case "dispatch": return viewTasks();
+    case "board": return viewBoard();
+    case "sessions":
+    case "sessions-closed": return viewSessions();
+    case "settings": return viewSettings();
+    case "states": return viewStates();
+    case "now":
+    case "now-light":
+    case "palette":
+    default: return viewNow();
+  }
+}
+function render(opts){
+  opts = opts || {};
+  applyTheme();
+  const route = state.route;
+  hdEl.innerHTML = headerHTML(route);
+  const shell = route !== "settings";
+  stripEl.hidden = !shell;
+  navEl.hidden = !shell;
+  stripEl.innerHTML = shell ? statusHTML() : "";
+  navEl.innerHTML = shell ? navHTML(route) : "";
+  contentEl.innerHTML = viewHTML(route);
+  renderMenu();
+  renderPop();
+  renderOverlays();
+  renderToasts();
+  syncPalAria();
+  if(opts.focusSel){
+    requestAnimationFrame(() => {
+      const el = document.querySelector(opts.focusSel);
+      if(!el) return;
+      el.focus({preventScroll:true});
+      if(opts.caret === "end" && typeof el.setSelectionRange === "function"){
+        try{ el.setSelectionRange(el.value.length, el.value.length); }catch(e){}
+      }
+    });
+  }
+}
+function renderOverlays(){
+  const sig = state.sheet.open ? "sheet" : state.palette.open ? "palette" : "";
+  const prev = state._overlaySig || "";
+  overlayEl.innerHTML = sig === "sheet" ? sheetHTML() : sig === "palette" ? paletteHTML() : "";
+  state._overlaySig = sig;
+  if(sig && sig !== prev){
+    requestAnimationFrame(() => {
+      if(sig === "palette"){ const inp = $("#pal-input"); if(inp) inp.focus(); }
+      else { const el = $(".sheet"); if(el) el.focus({preventScroll:true}); }
+    });
+  }
+}
+function parseRoute(){
+  const h = (location.hash || "").replace(/^#\/?/, "");
+  return ROUTES.includes(h) ? h : "now";
+}
+function setRoute(route){
+  state.route = route;
+  state.themeOverride = FORCED_LIGHT.has(route) ? "light" : null;
+  state.palette.open = route === "palette";
+  state.sheet.open = route === "dispatch";
+  if(route === "dispatch"){ state.sheet.taskId = "t1"; state.sheet.target = 2; }
+  if(route === "palette"){ state.palette.query = ""; state.palette.index = 0; }
+  if(route === "tasks-expanded"){ state.expanded = new Set(["t3"]); state.selected.clear(); }
+  if(route === "tasks" || route === "tasks-expanded"){ state.selected.clear(); }
+  if(route === "tasks-selected"){ state.selected = new Set(["t4","t6"]); state.expanded.clear(); }
+  if(route === "sessions"){ state.showClosed = false; }
+  if(route === "sessions-closed"){ state.showClosed = true; }
+  if(route === "sessions" || route === "sessions-closed"){ state.expandedSessions = new Set(["s1"]); }
+  state.menu = null;
+  state.envPop = false;
+  render();
+}
+function navTo(route){
+  if(state.route === route && !state.palette.open && !state.sheet.open){ setRoute(route); return; }
+  if(location.hash === "#/" + route){ setRoute(route); return; }
+  location.hash = "#/" + route;
+}
+window.addEventListener("hashchange", () => setRoute(parseRoute()));
+
+/* ============================================================
+   toast / 焦点
+   ============================================================ */
+const toastHandlers = new Map();
+let toastSeq = 0;
+function toast(text, opts){
+  opts = opts || {};
+  const id = "toast" + (++toastSeq);
+  state.toasts.push({id, text, action:opts.action || null, icon:opts.icon || null, error:!!opts.error});
+  if(state.toasts.length > 3) state.toasts.shift();
+  if(opts.onAction) toastHandlers.set(id, opts.onAction);
+  renderToasts();
+  setTimeout(() => dismissToast(id), opts.action ? 6000 : 3200);
+}
+function dismissToast(id){
+  state.toasts = state.toasts.filter(t => t.id !== id);
+  toastHandlers.delete(id);
+  renderToasts();
+}
+function captureFocusSelector(){
+  const ae = document.activeElement;
+  if(!ae || ae === document.body) return null;
+  const row = ae.closest && ae.closest("[data-row]");
+  if(row) return '[data-row][data-id="' + row.dataset.id + '"]';
+  const act = ae.closest && ae.closest("[data-act]");
+  if(act) return '[data-act="' + act.dataset.act + '"]' + (act.dataset.id ? '[data-id="' + act.dataset.id + '"]' : "");
+  return null;
+}
+function restoreFocus(){
+  const sel = state.returnFocusSel;
+  state.returnFocusSel = null;
+  if(!sel) return;
+  const el = document.querySelector(sel);
+  if(el) el.focus({preventScroll:true});
+}
+function focusCapture(){
+  const el = $("#capture");
+  if(!el) return;
+  el.focus({preventScroll:true});
+  try{ el.setSelectionRange(el.value.length, el.value.length); }catch(e){}
+}
+function closeMenu(){ state.menu = null; renderMenu(); }
+
+/* ============================================================
+   任务动作
+   ============================================================ */
+function toggleDone(id){
+  const t = taskById(id);
+  if(!t) return;
+  if(t.status === "done"){
+    t.status = t._prev || "todo";
+    if(t._prevRun){ t.run = t._prevRun; delete t._prevRun; }
+    delete t._prev;
+    render();
+    return;
+  }
+  t._prev = t.status;
+  t._prevRun = t.run || null;
+  t.status = "done";
+  t.run = null;
+  render();
+  toast("已完成「" + t.title + "」", {action:"撤销", onAction:() => {
+    t.status = t._prev || "todo";
+    if(t._prevRun) t.run = t._prevRun;
+    delete t._prev; delete t._prevRun;
+    render();
+    toast("已撤销");
+  }});
+}
+function markStatus(id, status){
+  const t = taskById(id);
+  if(!t) return;
+  const prev = t.status;
+  t.status = status;
+  if(status !== "doing") t.run = null;
+  render();
+  const label = status === "blocked" ? "标为阻塞" : status === "cancelled" ? "取消" : "更新";
+  toast("已" + label + "「" + t.title + "」", {action:"撤销", onAction:() => { t.status = prev; render(); toast("已撤销"); }});
+}
+function claimTask(id){
+  const t = taskById(id);
+  if(!t) return;
+  t.owner = "你";
+  render();
+  toast("已把「" + t.title + "」指派给你");
+}
+function requeueTask(id){
+  const t = taskById(id);
+  if(!t) return;
+  t.status = "todo";
+  t.run = null;
+  render();
+  toast("已放回队列：「" + t.title + "」");
+}
+function deleteTask(id){
+  const t = taskById(id);
+  if(!t) return;
+  const idx = state.tasks.indexOf(t);
+  state.tasks = state.tasks.filter(x => x.id !== id);
+  state.selected.delete(id);
+  state.expanded.delete(id);
+  render();
+  toast("已删除「" + t.title + "」", {action:"撤销", onAction:() => {
+    state.tasks.splice(idx, 0, t);
+    render();
+    toast("已恢复任务");
+  }});
+}
+function bulkDone(){
+  const ids = [...state.selected];
+  if(!ids.length) return;
+  const prev = ids.map(id => { const t = taskById(id); return t ? {t, status:t.status, run:t.run} : null; }).filter(Boolean);
+  prev.forEach(p => { p.t.status = "done"; p.t.run = null; });
+  render();
+  toast("已完成 " + ids.length + " 项", {action:"撤销", onAction:() => { prev.forEach(p => { p.t.status = p.status; p.t.run = p.run; }); render(); toast("已撤销"); }});
+}
+function bulkDelete(){
+  const ids = [...state.selected];
+  if(!ids.length) return;
+  const saved = ids.map(id => { const t = taskById(id); return t ? {t, idx:state.tasks.indexOf(t)} : null; }).filter(Boolean);
+  state.tasks = state.tasks.filter(t => !state.selected.has(t.id));
+  state.selected.clear();
+  render();
+  toast("已删除 " + saved.length + " 项", {action:"撤销", onAction:() => {
+    saved.sort((a,b) => a.idx - b.idx).forEach(x => state.tasks.splice(x.idx, 0, x.t));
+    render();
+    toast("已恢复任务");
+  }});
+}
+function interruptTask(id){
+  const t = taskById(id);
+  if(!t) return;
+  const prevRun = t.run;
+  const prevStatus = t.status;
+  t.run = null;
+  if(t.status === "doing") t.status = "todo";
+  render();
+  toast("已中断执行 · 任务已放回队列", {action:"撤销", onAction:() => { t.run = prevRun; t.status = prevStatus; render(); toast("已撤销中断"); }});
+}
+function openTask(id){
+  const t = taskById(id);
+  if(!t) return;
+  state.expanded = new Set([id]);
+  state.palette.open = false;
+  state.sheet.open = false;
+  if(["now","now-light","sessions","states","board"].includes(state.route)) navTo("tasks");
+  else render();
+  requestAnimationFrame(() => {
+    const row = document.querySelector('[data-row][data-id="' + id + '"]');
+    if(row) row.scrollIntoView({block:"center"});
+  });
+}
+function openRowMenu(el, id){
+  const t = taskById(id);
+  if(!t){ toast("更多操作（演示）"); return; }
+  const panelRect = panelEl.getBoundingClientRect();
+  const rect = el.getBoundingClientRect();
+  state.menu = {type:"row", taskId:id, top:Math.round(rect.bottom - panelRect.top + 4), right:Math.round(panelRect.right - rect.right)};
+  state.envPop = false;
+  renderPop();
+  renderMenu();
+}
+function rowMenuAction(doWhat, id){
+  state.menu = null;
+  renderMenu();
+  const t = taskById(id);
+  if(!t) return;
+  if(doWhat === "requeue"){ t.status = "todo"; t.run = null; render(); toast("已放回队列"); }
+  else if(doWhat === "edit"){ state.expanded = new Set([id]); render(); requestAnimationFrame(() => { const inp = document.querySelector('[data-act="title-input"][data-id="' + id + '"]'); if(inp){ inp.focus(); inp.select && inp.select(); } }); }
+  else if(doWhat === "copy"){ copyText("dsh-hub://task/" + id); toast("已复制任务链接"); }
+  else if(doWhat === "delete"){ deleteTask(id); }
+}
+function copyText(text){
+  try{ navigator.clipboard && navigator.clipboard.writeText(text); }catch(e){}
+}
+
+/* ============================================================
+   注意力 / 服务器 / 派发 / 命令面板
+   ============================================================ */
+function runAttention(i){
+  const a = ATTENTION[i];
+  if(!a) return;
+  switch(a.act){
+    case "attn-open": openTask("t1"); break;
+    case "attn-requeue": requeueTask("t7"); break;
+    case "attn-done": markStatus("t8","done"); break;
+    case "attn-open-session": state.expandedSessions = new Set(["s3"]); navTo("sessions"); break;
+    case "attn-log": toast("design preview 日志：EADDRINUSE :::4174 · 已重试 1 次"); break;
+    case "attn-start": startServer("srv2"); break;
+    default: break;
+  }
+}
+let serverTimer = 0;
+function startServer(id){
+  const s = serverById(id);
+  if(!s) return;
+  if(s.phase === "ready"){ toast(s.name + " 已在运行"); return; }
+  s.phase = "starting";
+  s.startedSec = 0;
+  s._token = (s._token || 0) + 1;
+  const token = s._token;
+  render();
+  toast("正在启动 " + s.name + "…", {icon:"refresh"});
+  clearTimeout(serverTimer);
+  serverTimer = setTimeout(() => {
+    if(s._token !== token) return;
+    s.phase = "ready";
+    s.startedSec = null;
+    render();
+    toast(s.name + " 已就绪 · " + s.port);
+  }, 1200);
+}
+function toggleServer(id){
+  const s = serverById(id);
+  if(!s) return;
+  if(s.phase === "ready"){ s.phase = "stopped"; render(); toast(s.name + " 已停止"); return; }
+  if(s.phase === "starting"){
+    s._token = (s._token || 0) + 1;
+    s.phase = "stopped";
+    render();
+    toast("已取消 " + s.name + " 的启动");
+    return;
+  }
+  startServer(id);
+}
+function openSheet(taskId){
+  state.returnFocusSel = captureFocusSelector();
+  state.sheet.open = true;
+  state.sheet.taskId = taskId || "t1";
+  state.sheet.target = 2;
+  state.sheet.note = "";
+  state.sheet.openAfter = true;
+  render();
+}
+function closeSheet(){
+  state.sheet.open = false;
+  const wasRoute = state.route === "dispatch";
+  if(wasRoute){
+    state.route = "tasks";
+    try{ history.replaceState(null, "", "#/tasks"); }catch(e){}
+    render();
+  } else {
+    render();
+    restoreFocus();
+  }
+}
+function setSheetTarget(n){
+  state.sheet.target = n;
+  render({focusSel:'[data-act="sheet-target"][data-target="' + n + '"]'});
+}
+function sheetSend(){
+  const t = taskById(state.sheet.taskId);
+  const target = state.sheet.target;
+  let label = target === 1 ? "新建对话" : target === 2 ? "整理工作区路径的展示规则" : ((sessionById(state.sheet.existing) || {}).title || "已有对话");
+  if(t){ t.run = {elapsed:"0 分钟", short:"0m", activity:"等待会话开始", session:label}; }
+  state.sheet.open = false;
+  state.sheet.note = "";
+  if(state.route === "dispatch"){
+    state.route = "tasks";
+    try{ history.replaceState(null, "", "#/tasks"); }catch(e){}
+  }
+  render();
+  toast("已派发给「" + label + "」", {action:"查看", onAction:() => { state.expandedSessions = new Set(["s1"]); navTo("sessions"); }});
+}
+function openPalette(){
+  state.returnFocusSel = captureFocusSelector();
+  state.palette.open = true;
+  state.palette.query = "";
+  state.palette.index = 0;
+  render();
+}
+function closePalette(){
+  state.palette.open = false;
+  if(state.route === "palette"){
+    state.route = "now";
+    try{ history.replaceState(null, "", "#/now"); }catch(e){}
+    render();
+    return;
+  }
+  render();
+  restoreFocus();
+}
+function updatePaletteList(){
+  const list = $("#pal-list");
+  if(list) list.innerHTML = paletteListHTML();
+  syncPalAria();
+}
+function syncPalAria(){
+  const inp = $("#pal-input");
+  if(inp) inp.setAttribute("aria-activedescendant", "pal-opt-" + state.palette.index);
+}
+function movePalette(delta){
+  const data = paletteData();
+  const len = data.flat.length;
+  if(!len) return;
+  state.palette.index = (state.palette.index + delta + len) % len;
+  updatePaletteList();
+  const on = $(".pal-row.on");
+  if(on) on.scrollIntoView({block:"nearest"});
+}
+function paletteExec(i){
+  const data = paletteData();
+  const item = data.flat[i];
+  if(!item) return;
+  closePalette();
+  setTimeout(item.run, 60);
+}
+
+/* ============================================================
+   对话 / 设置动作
+   ============================================================ */
+function toggleSession(id){
+  if(state.expandedSessions.has(id)) state.expandedSessions.delete(id);
+  else state.expandedSessions.add(id);
+  render();
+}
+function setSubchatStatus(id, status, label){
+  let found = null;
+  state.sessions.forEach(s => s.subchats.forEach(c => { if(c.id === id) found = c; }));
+  if(!found) return;
+  found.status = status;
+  render();
+  toast(label + "「" + found.title + "」");
+}
+function sendReply(id){
+  const text = (state.replyDrafts[id] || "").trim();
+  if(!text) return;
+  (state.subMessages[id] = state.subMessages[id] || []).push(text);
+  state.replyDrafts[id] = "";
+  let title = "子会话";
+  state.sessions.forEach(s => s.subchats.forEach(c => { if(c.id === id) title = c.title; }));
+  render({focusSel:'#reply-' + id, caret:"end"});
+  toast("已发送到「" + title + "」");
+}
+function saveRulesNow(){
+  const dirty = $("#rule-dirty");
+  if(dirty){ dirty.className = "saved"; dirty.innerHTML = icon("checkCircle",12) + " 已保存 · 刚刚"; }
+  toast("规则已保存");
+}
+function fillTemplate(text){
+  state.captureDraft = text.trim();
+  render({focusSel:"#capture", caret:"end"});
+}
+function manualRefresh(){
+  if(state.demo === "stale"){
+    state.demo = null;
+    render();
+    toast("已恢复同步 · 更新于刚刚");
+    return;
+  }
+  toast("已刷新 · 更新于刚刚");
+}
+function setFilter(f){
+  state.filter = f;
+  render({focusSel:'[data-act="filter"][data-filter="' + f + '"]'});
+}
+function toggleGroup(g){
+  if(state.collapsed.has(g)) state.collapsed.delete(g);
+  else state.collapsed.add(g);
+  render({focusSel:'[data-act="group-toggle"][data-group="' + g + '"]'});
+}
+function applyDemo(kind){
+  state.menu = null;
+  renderMenu();
+  if(kind === "reset"){
+    state.demo = null;
+    render();
+    toast("已恢复正常状态");
+    return;
+  }
+  state.demo = kind;
+  if(kind === "empty") state.selected.clear();
+  const labels = {stale:"同步中断", conflict:"revision 冲突", empty:"空状态", dense:"200 条任务"};
+  if(!["tasks","tasks-expanded","dispatch"].includes(state.route)) navTo("tasks");
+  else render();
+  toast("已切换到「" + (labels[kind] || kind) + "」演示");
+}
+
+/* ============================================================
+   点击 / 输入 / 键盘
+   ============================================================ */
+function handleAct(el, ev){
+  const act = el.dataset.act;
+  const id = el.dataset.id;
+  switch(act){
+    case "nav": navTo(el.dataset.route); break;
+    case "theme": setThemePref(el.dataset.theme); break;
+    case "copy-path": copyText("~/Projects/snippets/zvid/dsh-plugins"); toast("已复制路径", {icon:"checkCircle"}); break;
+    case "refresh": manualRefresh(); break;
+    case "demo-menu": state.menu = (state.menu && state.menu.type === "demo") ? null : {type:"demo"}; state.envPop = false; renderPop(); renderMenu(); break;
+    case "ws-menu": state.menu = (state.menu && state.menu.type === "ws") ? null : {type:"ws"}; renderMenu(); break;
+    case "ws-pick": { const name = el.dataset.name; state.menu = null; renderMenu(); toast(name === "dsh-plugins" ? "已在此工作区" : "已切换到「" + name + "」（演示）"); break; }
+    case "palette-open": openPalette(); break;
+    case "goto-filter": state.filter = el.dataset.filter || "all"; navTo("tasks"); break;
+    case "filter": setFilter(el.dataset.filter); break;
+    case "clear-task-search": state.taskQuery = ""; render({focusSel:"#task-search"}); break;
+    case "task-search": break;
+    case "sess-filter": state.sessionFilter = el.dataset.filter; render(); break;
+    case "group-toggle": toggleGroup(el.dataset.group); break;
+    case "group-ctl": toast("分组：按状态（原型固定）"); break;
+    case "sort-ctl": toast("排序：优先级 > 更新时间"); break;
+    case "view-list": navTo("tasks"); break;
+    case "view-board": navTo("board"); break;
+    case "new-task": if(!["tasks","tasks-expanded"].includes(state.route)) navTo("tasks"); setTimeout(focusCapture, 80); break;
+    case "claim": claimTask(id); break;
+    case "toggle": toggleDone(id); break;
+    case "dispatch": openSheet(id); break;
+    case "row-more": openRowMenu(el, id); break;
+    case "delete": deleteTask(id); break;
+    case "copy-link": copyText("dsh-hub://task/" + id); toast("已复制任务链接"); break;
+    case "mark-blocked": markStatus(id, "blocked"); break;
+    case "cancel-task": markStatus(id, "cancelled"); break;
+    case "bulk-claim": toast("已把 " + state.selected.size + " 项指派给你"); break;
+    case "bulk-done": bulkDone(); break;
+    case "bulk-dispatch": { const first = [...state.selected][0]; if(first) openSheet(first); break; }
+    case "bulk-delete": bulkDelete(); break;
+    case "bulk-cancel": state.selected.clear(); render(); break;
+    case "attn-open": case "attn-requeue": case "attn-done": case "attn-open-session": case "attn-log": case "attn-start": runAttention(+el.dataset.i); break;
+    case "attn-more": toast("已暂时忽略这条提醒"); break;
+    case "open-task": openTask(id); break;
+    case "open-board-task": openTask(id); break;
+    case "interrupt": interruptTask(id); break;
+    case "server-toggle": toggleServer(id); break;
+    case "server-log": { const s = serverById(id); toast(s && s.error ? "日志：" + s.error[0] : (s ? s.name + " 运行正常，暂无错误输出" : "日志")); break; }
+    case "open-url": toast("演示：在浏览器打开 " + el.dataset.url); break;
+    case "env-pop": state.envPop = !state.envPop; renderPop(); break;
+    case "sheet-target": setSheetTarget(+el.dataset.target); break;
+    case "sheet-close": closeSheet(); break;
+    case "sheet-send": sheetSend(); break;
+    case "palette-exec": paletteExec(+el.dataset.index); break;
+    case "demo": applyDemo(el.dataset.demo); break;
+    case "row-menu": rowMenuAction(el.dataset.demo, el.dataset.id); break;
+    case "toast-action": { const fn = toastHandlers.get(el.dataset.id); if(fn) fn(); dismissToast(el.dataset.id); break; }
+    case "open-session": toast("已打开会话"); break;
+    case "session-interrupt": { const s = sessionById(id); if(s){ s.status = "idle"; render(); toast("已中断「" + s.title + "」"); } break; }
+    case "session-close": { const s = sessionById(id); if(s){ s.status = "closed"; render(); toast("已关闭「" + s.title + "」 · 可在「显示已关闭」中查看"); } break; }
+    case "session-reopen": { const s = sessionById(id); if(s){ s.status = "idle"; render(); toast("已重新打开「" + s.title + "」"); } break; }
+    case "open-subchat": toast("已打开子会话"); break;
+    case "sub-interrupt": setSubchatStatus(id, "idle", "已中断"); break;
+    case "sub-close": setSubchatStatus(id, "closed", "已关闭"); break;
+    case "sub-reopen": setSubchatStatus(id, "running", "已重新打开"); break;
+    case "reply-send": sendReply(id); break;
+    case "new-subchat": toast("已在「整理工作区路径的展示规则」下新建子会话"); break;
+    case "retry": manualRefresh(); break;
+    case "conflict-accept": state.demo = null; render(); toast("已采用最新版本"); break;
+    case "conflict-retry": toast("已重试你的修改"); break;
+    case "tpl": fillTemplate(el.textContent); break;
+    case "file-accept": toast("已采用其他会话的最新版本"); break;
+    case "file-overwrite": toast("已用当前内容覆盖"); break;
+    case "rule-reset": toast("已恢复上次保存"); break;
+    case "new-skill": toast("打开技能创建抽屉（演示）"); break;
+    case "skill-more": toast("技能操作（演示）"); break;
+    default: break;
+  }
+}
+
+panelEl.addEventListener("click", e => {
+  if(e.target.closest(".row-sel")) return;
+  const el = e.target.closest("[data-act]");
+  if(!el){
+    const row = e.target.closest("[data-row]");
+    if(row && !e.target.closest(".expand") && !e.target.closest(".sub-list") && !e.target.closest(".row-actions")) activateRow(row);
+    return;
+  }
+  if(e.target.closest("#menu") || e.target.closest("#pop")){
+    state.menu = null;
+    handleAct(el, e);
+    return;
+  }
+  handleAct(el, e);
+});
+document.addEventListener("click", e => {
+  if(state.menu && !e.target.closest("#menu") && !e.target.closest('[data-act="demo-menu"]') && !e.target.closest('[data-act="ws-menu"]') && !e.target.closest('[data-act="row-more"]')) closeMenu();
+  if(state.envPop && !e.target.closest("#pop") && !e.target.closest('[data-act="env-pop"]')){ state.envPop = false; renderPop(); }
+});
+panelEl.addEventListener("change", e => {
+  const el = e.target.closest("[data-act]");
+  if(!el) return;
+  switch(el.dataset.act){
+    case "select": if(el.checked) state.selected.add(el.dataset.id); else state.selected.delete(el.dataset.id); render(); break;
+    case "sess-show-closed": state.showClosed = el.checked; render(); break;
+    case "sheet-open-after": state.sheet.openAfter = el.checked; break;
+    case "sheet-existing": state.sheet.existing = el.value; break;
+    case "capture-prio": state.capturePrio = el.value; break;
+    case "capture-owner": state.captureOwner = el.value; break;
+    default: break;
+  }
+});
+panelEl.addEventListener("input", e => {
+  if(e.target.id === "capture"){ state.captureDraft = e.target.value; return; }
+  const el = e.target.closest("[data-act]");
+  if(!el) return;
+  switch(el.dataset.act){
+    case "sess-search": state.sessionQuery = el.value; render({focusSel:"#sess-search", caret:"end"}); break;
+    case "task-search": state.taskQuery = el.value; render({focusSel:"#task-search", caret:"end"}); break;
+    case "reply-input": state.replyDrafts[el.dataset.id] = el.value; break;
+    case "sheet-note": state.sheet.note = el.value; break;
+    case "palette-input": state.palette.query = el.value; state.palette.index = 0; updatePaletteList(); break;
+    case "title-input": markTitleSaving(el); break;
+    case "rule-input": { const d = $("#rule-dirty"); if(d){ d.className = "dirty"; d.innerHTML = '<span class="dot" aria-hidden="true"></span>未保存的修改'; } break; }
+    case "ctx-input": { const s = $("#ctx-save"); if(s){ s.className = "saving"; s.innerHTML = '<span class="sp" aria-hidden="true"></span> 保存中…'; clearTimeout(state._ctxTimer); state._ctxTimer = setTimeout(() => { const el2 = $("#ctx-save"); if(el2){ el2.className = "saved"; el2.innerHTML = icon("checkCircle",12) + " 已保存"; } }, 900); } break; }
+    default: break;
+  }
+});
+function markTitleSaving(input){
+  const box = $("#title-save");
+  if(box){ box.innerHTML = '<span class="saving" style="margin:0"><span class="sp" aria-hidden="true"></span> 保存中…</span>'; }
+  clearTimeout(state._titleTimer);
+  state._titleTimer = setTimeout(() => {
+    const t = taskById(input.dataset.id);
+    if(t && input.value.trim()) t.title = input.value.trim();
+    const box2 = $("#title-save");
+    if(box2) box2.innerHTML = icon("checkCircle",12) + " 已保存 · 刚刚";
+  }, 900);
+}
+
+panelEl.addEventListener("keydown", e => {
+  if(e.target.id === "capture"){
+    if(e.key === "Enter"){ e.preventDefault(); createTask(); }
+    else if(e.key === "Tab" && !state.captureDetail){ e.preventDefault(); state.captureDetail = true; render({focusSel:"#capture", caret:"end"}); }
+    else if(e.key === "Escape"){ if(state.captureDetail){ state.captureDetail = false; render({focusSel:"#capture"}); } else e.target.blur(); }
+    return;
+  }
+  if(e.target.dataset && e.target.dataset.act === "reply-input"){
+    if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendReply(e.target.dataset.id); }
+    return;
+  }
+  if(e.key === "Escape" && state.menu){ closeMenu(); }
+});
+function createTask(){
+  const title = state.captureDraft.trim();
+  if(!title) return;
+  const t = {id:"nt" + Date.now(), title, status:"todo", prio: state.capturePrio || "normal", owner:"无人", updated:"刚刚"};
+  const idx = state.tasks.findIndex(x => x.status === "todo");
+  if(idx >= 0) state.tasks.splice(idx, 0, t); else state.tasks.unshift(t);
+  state.captureDraft = "";
+  state.captureDetail = false;
+  state.highlightId = t.id;
+  state.filter = "all";
+  render();
+  focusCapture();
+  setTimeout(() => { state.highlightId = null; }, 700);
+}
+
+function cycleBoardStatus(id, dir){
+  const t = taskById(id);
+  if(!t) return;
+  const order = ["todo","doing","blocked","done"];
+  const i = Math.max(0, order.indexOf(t.status));
+  t.status = order[(i + dir + order.length) % order.length];
+  if(t.status !== "doing") t.run = null;
+  render();
+  requestAnimationFrame(() => {
+    const card = document.querySelector('[data-act="open-board-task"][data-id="' + id + '"]');
+    if(card) card.focus({preventScroll:true});
+  });
+  toast("状态已改为「" + ({todo:"待办",doing:"进行中",blocked:"阻塞",done:"已完成"})[t.status] + "」");
+}
+function activateRow(row){
+  const kind = row.dataset.kind;
+  const id = row.dataset.id;
+  if(kind === "task" || kind === "run" || kind === "dense"){ if(kind !== "dense") openTask(id); }
+  else if(kind === "session") toggleSession(id);
+  else if(kind === "subchat") toast("子会话：按 Enter 查看时间线（演示）");
+  else if(kind === "board-card") openTask(id);
+  else if(kind === "attention") runAttention(+String(id).replace("att",""));
+  else if(kind === "env"){ state.envPop = true; renderPop(); }
+  else if(kind === "rule" || kind === "skill"){ toast("行内编辑（演示）"); }
+}
+function isTyping(el){
+  if(!el) return false;
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+}
+function visibleRows(){ return $$("[data-row]", contentEl); }
+function moveRowFocus(delta){
+  const rows = visibleRows();
+  if(!rows.length) return;
+  const active = document.activeElement;
+  let i = rows.indexOf(active);
+  if(i < 0) i = state.focusRow > 0 ? state.focusRow : (delta > 0 ? -1 : 0);
+  i = Math.max(0, Math.min(rows.length - 1, i + delta));
+  state.focusRow = i;
+  rows[i].focus({preventScroll:true});
+  rows[i].scrollIntoView({block:"nearest"});
+}
+function focusedRow(){ return document.activeElement && document.activeElement.closest ? document.activeElement.closest("[data-row]") : null; }
+function trapTab(e, root){
+  const els = Array.from(root.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')).filter(el => el.offsetParent !== null);
+  if(!els.length) return;
+  const first = els[0], last = els[els.length - 1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
+document.addEventListener("keydown", e => {
+  if(state.palette.open || state.sheet.open){
+    if(e.key === "Escape"){ e.preventDefault(); if(state.palette.open) closePalette(); else closeSheet(); return; }
+    if(state.palette.open){
+      if(e.key === "ArrowDown" || e.key === "ArrowUp"){ e.preventDefault(); movePalette(e.key === "ArrowDown" ? 1 : -1); }
+      else if(e.key === "Enter"){ e.preventDefault(); paletteExec(state.palette.index); }
+      else if(e.key === "Tab"){ e.preventDefault(); const inp = $("#pal-input"); if(inp) inp.focus(); }
+      return;
+    }
+    if(state.sheet.open){
+      const tag = e.target.tagName;
+      if(tag !== "TEXTAREA" && tag !== "SELECT" && (e.key === "1" || e.key === "2" || e.key === "3")){ e.preventDefault(); setSheetTarget(+e.key); return; }
+      if(e.key === "Enter"){
+        const ae = document.activeElement;
+        if(ae && ae.matches && ae.matches("button,a,input,select,textarea")) return;
+        e.preventDefault(); sheetSend(); return;
+      }
+      if(e.key === "Tab"){ trapTab(e, $(".sheet")); return; }
+      return;
+    }
+  }
+  if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){ e.preventDefault(); openPalette(); return; }
+  if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s"){ if(state.route === "settings"){ e.preventDefault(); saveRulesNow(); } return; }
+  if(e.metaKey && e.key.toLowerCase() === "n"){ e.preventDefault(); if(!["tasks","tasks-expanded"].includes(state.route)) navTo("tasks"); setTimeout(focusCapture, 80); return; }
+  if(e.key === "Escape"){
+    if(state.menu){ closeMenu(); return; }
+    if(state.envPop){ state.envPop = false; renderPop(); return; }
+    if(isTyping(e.target)){ e.target.blur(); return; }
+    return;
+  }
+  if(state.gPending){
+    state.gPending = false;
+    if(e.key === "o"){ e.preventDefault(); navTo("now"); return; }
+    if(e.key === "t"){ e.preventDefault(); navTo("tasks"); return; }
+    if(e.key === "c"){ e.preventDefault(); navTo("sessions"); return; }
+    return;
+  }
+  if(isTyping(e.target)) return;
+  if(e.key === "/"){ e.preventDefault(); focusSearch(); return; }
+  if(e.key === "n"){ e.preventDefault(); if(!["tasks","tasks-expanded"].includes(state.route)) navTo("tasks"); setTimeout(focusCapture, 80); return; }
+  if(e.key === "j" || e.key === "k"){ e.preventDefault(); moveRowFocus(e.key === "j" ? 1 : -1); return; }
+  if(e.key === "Enter"){
+    const row = focusedRow();
+    if(row){ e.preventDefault(); activateRow(row); }
+    return;
+  }
+  if(e.key === "x"){ const row = focusedRow(); if(row && row.dataset.kind === "task"){ e.preventDefault(); toggleDone(row.dataset.id); } return; }
+  if(e.key === "e"){
+    const row = focusedRow();
+    if(row && row.dataset.kind === "task"){
+      e.preventDefault();
+      state.expanded = new Set([row.dataset.id]);
+      render();
+      requestAnimationFrame(() => { const inp = document.querySelector('[data-act="title-input"][data-id="' + row.dataset.id + '"]'); if(inp){ inp.focus(); inp.select && inp.select(); } });
+    }
+    return;
+  }
+  if(e.key === "d"){ const row = focusedRow(); if(row && row.dataset.kind === "task"){ e.preventDefault(); openSheet(row.dataset.id); } return; }
+  if(e.key === "[" || e.key === "]"){
+    const row = focusedRow();
+    if(row && row.dataset.kind === "board-card"){
+      e.preventDefault();
+      cycleBoardStatus(row.dataset.id, e.key === "]" ? 1 : -1);
+    }
+    return;
+  }
+  if(e.key === "g"){ e.preventDefault(); state.gPending = true; setTimeout(() => { state.gPending = false; }, 900); return; }
+});
+function focusSearch(){
+  if(state.route === "sessions" || state.route === "sessions-closed"){ const el = $("#sess-search"); if(el){ el.focus(); el.select && el.select(); } return; }
+  if(state.route === "settings"){ const el = $("#skill-search"); if(el){ el.focus(); } return; }
+  if(["tasks","tasks-selected","tasks-expanded"].includes(state.route)){
+    const el = $("#task-search");
+    if(el){ el.focus(); el.select && el.select(); return; }
+    focusCapture(); return;
+  }
+  navTo("tasks");
+  setTimeout(() => { const el = $("#task-search"); if(el) el.focus(); }, 100);
+}
+
+/* ============================================================
+   启动
+   ============================================================ */
+(function boot(){
+  const raw = (location.hash || "").replace(/^#\/?/, "");
+  if(!ROUTES.includes(raw)){
+    try{ history.replaceState(null, "", "#/now"); }catch(e){}
+  }
+  setRoute(ROUTES.includes(raw) ? raw : "now");
+})();
+</script>
+</body>
+</html>

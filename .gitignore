@@ -7,6 +7,9 @@
 .research/
 .grok-bot/
 
+# Harness screenshots (regenerate with node tools/harness/shoot.mjs)
+tools/harness/shots/
+
 # Build artifacts and packaged tarballs
 dist/
 *.tgz

@@ -14,6 +14,7 @@ import { WorkspaceHub, resolveBoardRoot } from './lib/hub.js';
 import { Subchats } from './lib/subchats.js';
 import { HubSessions } from './lib/hubs.js';
 import { WorkspaceContextSections } from './lib/context-injection.js';
+import { ServerRunner } from './lib/servers.js';
 import { registerTools } from './lib/tools.js';
 import { registerBridge } from './lib/bridge.js';
 
@@ -51,6 +52,11 @@ export function apply(ctx) {
   const subchats = new Subchats(ctx, logger);
   const hubs = new HubSessions(ctx, logger);
   const workspaceContext = new WorkspaceContextSections(ctx, logger);
+  const servers = new ServerRunner(ctx, logger);
+
+  // Stop every dev server this plugin started before its Host half unloads, so
+  // disabling the plugin never leaves an orphan process holding a port.
+  ctx.effect(() => () => servers.dispose(), 'workspace-hub: dev servers');
 
   ctx.effect(() => {
     void hubs
@@ -58,7 +64,7 @@ export function apply(ctx) {
       .catch((error) => logger?.warn?.(`workspace-hub: legacy hub cleanup failed: ${String(error?.message ?? error)}`));
   }, 'workspace-hub: legacy hub sessions');
 
-  ctx.effect(() => registerTools(ctx, { hub, subchats }), 'workspace-hub: tools');
+  ctx.effect(() => registerTools(ctx, { hub, subchats, servers }), 'workspace-hub: tools');
 
   // Sub-chat lifecycle: stop a conversation's resident sub chats when that
   // conversation's Agent is disposed. The scoped effect runs while the parent is
@@ -159,7 +165,7 @@ export function apply(ctx) {
   // service the tools still work.
   ctx.inject(['webServer', 'connection'], (bridgeCtx) => {
     bridgeCtx.effect(
-      () => registerBridge(bridgeCtx, { hub, subchats, hubs, logger, workspaceContext }),
+      () => registerBridge(bridgeCtx, { hub, subchats, hubs, logger, workspaceContext, servers }),
       'workspace-hub: panel bridge',
     );
   });
